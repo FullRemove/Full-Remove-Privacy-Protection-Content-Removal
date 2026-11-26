@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-labelledby="title desc">
+  <title id="title">Full Remove</title>
+  <desc id="desc">Full Remove privacy protection brand mark.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 10 137 32v39c0 38-22 63-57 79C45 134 23 109 23 71V32L80 10Z" fill="#0B2340" stroke="#39BDF2" stroke-width="7"/>
+    <path d="M51 50h58v50H51z" stroke="#F5F8FC" stroke-width="6"/>
+    <path d="M51 65h58" stroke="#F5F8FC" stroke-width="5"/>
+    <circle cx="62" cy="57.5" r="2.8" fill="#39BDF2" stroke="none"/>
+    <circle cx="73" cy="57.5" r="2.8" fill="#39BDF2" stroke="none"/>
+    <circle cx="84" cy="57.5" r="2.8" fill="#39BDF2" stroke="none"/>
+    <path d="m55 92 13-13 11 10 9-10 15 13" stroke="#75D9F2" stroke-width="5"/>
+    <path d="m49 113 62-68" stroke="#168AF5" stroke-width="9"/>
+  </g>
+  <text x="170" y="103" fill="#F5F8FC" font-family="Manrope,Arial,sans-serif" font-size="76" font-weight="800" letter-spacing="-4">Full</text>
+  <text x="325" y="103" fill="#48BFF0" font-family="Manrope,Arial,sans-serif" font-size="76" font-weight="800" letter-spacing="-4">Remove</text>
+  <path d="M174 125H592" stroke="#38BDF2" stroke-width="4" stroke-linecap="round"/>
+</svg>

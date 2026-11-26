@@ -1,0 +1,6 @@
+{
+  "name": "Full Remove — Privacy Protection & Content Removal",
+  "description": "A professional, human-managed service for reviewing privacy violations, preparing evidence-backed reports, coordinating official platform submissions and verifying outcomes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

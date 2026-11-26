@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", "Noto Sans Arabic", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Arabic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-porcelain: #f7fafc;
+  --color-mist: #eff5fa;
+  --color-ink: #041e4a;
+  --color-midnight: #031738;
+  --color-midnight-card: #07224d;
+  --color-sapphire: #0057b8;
+  --color-cobalt: #0066cc;
+  --color-teal-brand: #00758a;
+  --color-aqua-brand: #00b8d4;
+  --color-emerald-brand: #059669;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 84px;
+    background-color: #f7fafc;
+    color: #041e4a;
+  }
+
+  body {
+    margin: 0;
+    background-color: #f7fafc;
+    color: #041e4a;
+    font-family: "Plus Jakarta Sans", "Noto Sans Arabic", system-ui, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(0, 134, 158, 0.18);
+    color: #041e4a;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Outfit", "Noto Sans Arabic", system-ui, sans-serif;
+  }
+
+  code, kbd, pre, .font-mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  [dir="rtl"] body,
+  [dir="rtl"] h1,
+  [dir="rtl"] h2,
+  [dir="rtl"] h3,
+  [dir="rtl"] h4 {
+    font-family: "Noto Sans Arabic", "Outfit", "Plus Jakarta Sans", sans-serif;
+    letter-spacing: 0 !important;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body.printing-certificate * {
+    visibility: hidden;
+  }
+  body.printing-certificate #printable-certificate-sheet,
+  body.printing-certificate #printable-certificate-sheet * {
+    visibility: visible;
+  }
+  body.printing-certificate #printable-certificate-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: #ffffff !important;
+    color: #041e4a !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
