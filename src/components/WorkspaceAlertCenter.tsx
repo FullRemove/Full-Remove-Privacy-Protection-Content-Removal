@@ -46,7 +46,7 @@ export function WorkspaceAlertBell({
         aria-expanded={open}
         aria-label={t.workspace.alerts.ariaLabel}
         onClick={() => setOpen((prev) => !prev)}
-        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+        className={`inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition cursor-pointer ${
           hasUrgent
             ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100/75'
             : hasLiveResolved

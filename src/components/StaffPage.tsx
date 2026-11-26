@@ -603,7 +603,7 @@ export function StaffPage({
               type="button"
               data-testid="staff-quick-jump-btn"
               onClick={() => setQuickJumpOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] cursor-pointer"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] transition cursor-pointer"
             >
               <Search className="h-3.5 w-3.5 text-[#0057B8]" />
               <span className="hidden md:inline">{t.enhancements.quickJump.buttonLabel}</span>
@@ -618,7 +618,7 @@ export function StaffPage({
             <button
               type="button"
               onClick={() => onNavigate('/platform-ops')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#0057B8]/25 bg-[#EFF7FC] px-3 py-1.5 text-xs font-semibold text-[#0057B8] hover:bg-[#DCEEFB] cursor-pointer whitespace-nowrap"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#0057B8]/25 bg-[#EFF7FC] px-3 text-xs font-semibold text-[#0057B8] hover:bg-[#DCEEFB] transition cursor-pointer whitespace-nowrap"
             >
               <span>{t.staff.openCentralAdmin}</span>
               <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" />

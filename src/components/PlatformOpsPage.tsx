@@ -628,7 +628,7 @@ export function PlatformOpsPage({
               type="button"
               data-testid="admin-quick-jump-btn"
               onClick={() => setQuickJumpOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2 sm:px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] cursor-pointer"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2 sm:px-2.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] transition cursor-pointer"
               aria-label={t.enhancements.quickJump.buttonLabel}
             >
               <Search className="h-3.5 w-3.5 text-[#0057B8]" />
@@ -644,7 +644,7 @@ export function PlatformOpsPage({
             <button
               type="button"
               onClick={() => fetchView(view)}
-              className="shrink-0 whitespace-nowrap rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] cursor-pointer"
+              className="inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 sm:px-3 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] transition cursor-pointer"
             >
               {t.common.refresh}
             </button>

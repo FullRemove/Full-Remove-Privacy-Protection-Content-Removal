@@ -97,6 +97,36 @@ export interface SiteCopy {
     useInInquiryCta: string;
     openWorkspaceCta: string;
   };
+  securityTrustSection: {
+    eyebrow: string;
+    heading: string;
+    intro: string;
+    privacyAction: string;
+    items: {
+      id: 'encryption' | 'experts' | 'gdpr';
+      tag: string;
+      title: string;
+      body: string;
+      proof: string;
+    }[];
+  };
+  successStoriesSection: {
+    eyebrow: string;
+    heading: string;
+    intro: string;
+    prevLabel: string;
+    nextLabel: string;
+    showingLabel: (start: number, end: number, total: number) => string;
+    items: {
+      id: string;
+      category: string;
+      platform: string;
+      quote: string;
+      client: string;
+      outcome: string;
+      turnaround: string;
+    }[];
+  };
   faqSection: {
     eyebrow: string;
     heading: string;
@@ -498,6 +528,108 @@ export const SITE_TRANSLATIONS: Record<LangCode, SiteCopy> = {
       checklistTitle: 'What helps speed up approval',
       useInInquiryCta: 'Pre-fill inquiry with these details',
       openWorkspaceCta: 'Sign in to open case',
+    },
+    securityTrustSection: {
+      eyebrow: 'Security & Trust',
+      heading: 'Built to protect sensitive evidence and your privacy at every step.',
+      intro:
+        'From the moment you share a link or upload proof, your case stays inside encrypted infrastructure managed by vetted specialists under strict data-protection controls.',
+      privacyAction: 'Read our privacy notice',
+      items: [
+        {
+          id: 'encryption',
+          tag: 'AES-256 · SHA-256',
+          title: 'Encrypted Storage',
+          body: 'Screenshots, identity records, and threat logs are stored in encrypted, access-controlled vaults with tamper-evident SHA-256 verification.',
+          proof: 'Private vault access with zero public file indexing',
+        },
+        {
+          id: 'experts',
+          tag: 'VETTED SPECIALISTS',
+          title: 'Verified Privacy Experts',
+          body: 'Every submission is reviewed and escalated manually by trained privacy specialists—never delegated to generic automated spam scripts.',
+          proof: 'Role-restricted access and logged specialist actions',
+        },
+        {
+          id: 'gdpr',
+          tag: 'GDPR · DATA RIGHTS',
+          title: 'GDPR/Data Privacy Compliance',
+          body: 'We enforce strict data minimization, confidential retention rules, and on-demand client export or deletion rights for your records.',
+          proof: 'Self-serve export and erasure requests in your portal',
+        },
+      ],
+    },
+    successStoriesSection: {
+      eyebrow: 'Success Stories',
+      heading: 'Real outcomes shared by clients we helped protect.',
+      intro:
+        'Every identity and personal detail is anonymized to safeguard client confidentiality while illustrating how structured filings deliver verified removals.',
+      prevLabel: 'Previous success story',
+      nextLabel: 'Next success story',
+      showingLabel: (start: number, end: number, total: number) =>
+        `Showing ${start}–${end} of ${total} verified cases`,
+      items: [
+        {
+          id: 'story-1',
+          category: 'Impersonation',
+          platform: 'Instagram',
+          quote:
+            'An impostor copied my portfolio and messaged my clients for deposits. Full Remove archived every screenshot and had the fake account taken down in four days.',
+          client: 'S. K. — Portrait Photographer',
+          outcome: 'Fake profile removed',
+          turnaround: '4 days',
+        },
+        {
+          id: 'story-2',
+          category: 'Cloned Website',
+          platform: 'Domain & Web Host',
+          quote:
+            'A scam storefront cloned our store branding and checkout links. Their registrar notice suspended the fraudulent domain before our customers suffered further losses.',
+          client: 'M. A. — Retail Brand Founder',
+          outcome: 'Domain suspended',
+          turnaround: '6 days',
+        },
+        {
+          id: 'story-3',
+          category: 'Deepfake Media',
+          platform: 'TikTok & Re-uploads',
+          quote:
+            'Finding an AI-edited clip using my voice was terrifying. The specialist team matched our source recordings and escalated across every mirror until all copies were gone.',
+          client: 'N. D. — Healthcare Educator',
+          outcome: 'All copies removed',
+          turnaround: '5 days',
+        },
+        {
+          id: 'story-4',
+          category: 'Private Media',
+          platform: 'Image Hosts',
+          quote:
+            'They handled my case with complete discretion—no awkward calls, tamper-evident hashes for every link, and clear confirmation once the leaked photos were cleared.',
+          client: 'R. H. — Private Client',
+          outcome: 'Photos verified cleared',
+          turnaround: '3 days',
+        },
+        {
+          id: 'story-5',
+          category: 'Urgent Safety',
+          platform: 'Video Platform',
+          quote:
+            'Within hours of reporting an extortion threat, they locked down our chat evidence in encrypted storage and filed an emergency safety escalation that ended the threat.',
+          client: 'T. B. — Operations Manager',
+          outcome: 'Priority takedown',
+          turnaround: '36 hours',
+        },
+        {
+          id: 'story-6',
+          category: 'Copyright',
+          platform: 'YouTube & Web',
+          quote:
+            'Months of our paid training videos were reposted publicly without permission. Full Remove prepared the DMCA filings and tracked every URL until verification.',
+          client: 'L. M. — Course Creator',
+          outcome: 'DMCA claims resolved',
+          turnaround: '7 days',
+        },
+      ],
     },
     faqSection: {
       eyebrow: 'Common questions',
@@ -924,6 +1056,108 @@ export const SITE_TRANSLATIONS: Record<LangCode, SiteCopy> = {
       useInInquiryCta: 'تعبئة رسالة بهذه التفاصيل',
       openWorkspaceCta: 'سجّل الدخول لفتح الحالة',
     },
+    securityTrustSection: {
+      eyebrow: 'الأمان والثقة',
+      heading: 'بنية محمية لصون أدلتك الحساسة وخصوصيتك في كل خطوة.',
+      intro:
+        'من لحظة مشاركة الرابط أو رفع المستندات، تبقى حالتك داخل بيئة مشفرة يديرها مختصون معتمدون وفق ضوابط صارمة لحماية البيانات.',
+      privacyAction: 'اقرأ إشعار الخصوصية',
+      items: [
+        {
+          id: 'encryption',
+          tag: 'AES-256 · SHA-256',
+          title: 'تخزين مشفّر وآمن',
+          body: 'تُحفظ لقطات الشاشة ووثائق الهوية وسجلات التهديد داخل خزائن مشفرة ومقيدة الوصول مع بصمة تحقق SHA-256.',
+          proof: 'وصول خاص بالكامل دون أي فهرسة عامة للملفات',
+        },
+        {
+          id: 'experts',
+          tag: 'مختصون معتمدون',
+          title: 'خبراء خصوصية موثقون',
+          body: 'يتم فحص كل طلب وإرساله يدوياً عبر مختصي خصوصية مدربين، دون الاعتماد على نصوص آلية عشوائية.',
+          proof: 'صلاحيات مقيدة وسجل تدقيق واضح لكل إجراء',
+        },
+        {
+          id: 'gdpr',
+          tag: 'GDPR · حقوق البيانات',
+          title: 'الامتثال للائحة GDPR وحماية البيانات',
+          body: 'نلتزم بتقليل البيانات لأدنى حد وقواعد الاحتفاظ السرية، مع حقك الكامل في تنزيل بياناتك أو طلب حذفها نهائياً.',
+          proof: 'طلبات التصدير والحذف متاحة مباشرة من بوابتك',
+        },
+      ],
+    },
+    successStoriesSection: {
+      eyebrow: 'قصص نجاح موثقة',
+      heading: 'نتائج حقيقية يرويها عملاء ساعدناهم في حماية سمعتهم.',
+      intro:
+        'تُعرض جميع الأسماء والتفاصيل بصيغة مجهولة حفاظاً على سرية العملاء التامة، مع توضيح أثر البلاغات الموثقة في إزالة المحتوى.',
+      prevLabel: 'قصة النجاح السابقة',
+      nextLabel: 'قصة النجاح التالية',
+      showingLabel: (start: number, end: number, total: number) =>
+        `عرض ${start}–${end} من أصل ${total} حالة موثقة`,
+      items: [
+        {
+          id: 'story-1',
+          category: 'انتحال شخصية',
+          platform: 'إنستغرام',
+          quote:
+            'نسخ حساب وهمي أعمالي وطلب تحويلات مالية من عملائي. وثّق فريق Full Remove جميع الأدلة وأُغلق الحساب المنتحل خلال أربعة أيام.',
+          client: 'س. ك. — مصور محترف',
+          outcome: 'تمت إزالة الحساب الوهمي',
+          turnaround: '4 أيام',
+        },
+        {
+          id: 'story-2',
+          category: 'موقع مقلّد',
+          platform: 'النطاق والمستضيف',
+          quote:
+            'استنسخ موقع احتيالي شعارنا وصفحة الدفع الخاصة بمتجرنا. أدى البلاغ الرسمي لمسجل النطاق إلى إيقاف الموقع قبل تضليل المزيد من الزبائن.',
+          client: 'م. ع. — مؤسس متجر إلكتروني',
+          outcome: 'تم إيقاف النطاق المزيف',
+          turnaround: '6 أيام',
+        },
+        {
+          id: 'story-3',
+          category: 'تزييف عميق',
+          platform: 'تيك توك ومواقع إعادة النشر',
+          quote:
+            'كان العثور على مقطع ذكاء اصطناعي بصوتي أمراً مقلقاً للغاية. طابق المختصون تسجيلاتي الأصلية وتابعوا التصعيد حتى حُذفت كل النسخ.',
+          client: 'ن. د. — محاضِرة طبية',
+          outcome: 'حذف كافة النسخ',
+          turnaround: '5 أيام',
+        },
+        {
+          id: 'story-4',
+          category: 'صور خاصة',
+          platform: 'مواقع استضافة الصور',
+          quote:
+            'تعاملوا مع حالتي بسرية تامة واحترافية عالية، مع توثيق مشفر لكل رابط وتأكيد واضح فور التحقق من اختفاء الصور.',
+          client: 'ر. ح. — عميل خاص',
+          outcome: 'تم التحقق من الإزالة',
+          turnaround: '3 أيام',
+        },
+        {
+          id: 'story-5',
+          category: 'حالة عاجلة',
+          platform: 'منصة فيديو',
+          quote:
+            'خلال ساعات من الإبلاغ عن محاولة ابتزاز، حفظوا سجلات التهديد في خزينة مشفرة ورفعوا بلاغ طوارئ أنهى نشر المقطع تماماً.',
+          client: 'ط. ب. — مدير عمليات',
+          outcome: 'إزالة ذات أولوية قصوى',
+          turnaround: '36 ساعة',
+        },
+        {
+          id: 'story-6',
+          category: 'حقوق نشر',
+          platform: 'يوتيوب والويب',
+          quote:
+            'أُعيد نشر دوراتنا التدريبية المدفوعة دون إذن. أعدّ الفريق ملفات DMCA وتابع كل رابط حتى أُزيلت جميع الانتهاكات.',
+          client: 'ل. م. — صانع دورات تعليمية',
+          outcome: 'إتمام مطالبات DMCA',
+          turnaround: '7 أيام',
+        },
+      ],
+    },
     faqSection: {
       eyebrow: 'أسئلة شائعة',
       heading: 'إجابات واضحة ومباشرة قبل أن تبدأ.',
@@ -1347,6 +1581,108 @@ export const SITE_TRANSLATIONS: Record<LangCode, SiteCopy> = {
       checklistTitle: 'چی یارمەتی پەسەندکردنی خێرا دەدات',
       useInInquiryCta: 'پڕکردنەوەی نامە بەم وردەکارییانە',
       openWorkspaceCta: 'چوونەژوورەوە بۆ کردنەوەی کەیس',
+    },
+    securityTrustSection: {
+      eyebrow: 'ئاسایش و متمانە',
+      heading: 'دروستکراوە بۆ پاراستنی بەڵگە هەستیارەکان و تایبەتمەندیت لە هەموو هەنگاوێکدا.',
+      intro:
+        'لە یەکەم چرکەوە کە بەستەر یان بەڵگە دەنێریت، کەیسەکەت لە ناو سیستەمێکی کۆدکراودا بە دەستی پسپۆڕانی باوەڕپێکراو و یاسای توندی پاراستنی زانیاری دەپارێزرێت.',
+      privacyAction: 'ئاگاداریی تایبەتمەندی بخوێنەرەوە',
+      items: [
+        {
+          id: 'encryption',
+          tag: 'AES-256 · SHA-256',
+          title: 'هەڵگرتنی کۆدکراو',
+          body: 'هەموو وێنەی شاشە، بەڵگەنامەی ناسنامە و تۆمارەکان لە خەزێنەی کۆدکراو و سنوورداردا بە پشکنینی SHA-256 هەڵدەگیرێن.',
+          proof: 'پاراستنی تەواوی تایبەتمەندی بەبێ بڵاوبوونەوەی گشتی',
+        },
+        {
+          id: 'experts',
+          tag: 'پسپۆڕانی باوەڕپێکراو',
+          title: 'پسپۆڕانی تایبەتمەندیی سەلمێنراو',
+          body: 'هەموو کەیسێک بە دەستی لە لایەن پسپۆڕانی ڕاهێنراوی تایبەتمەندییەوە پشکنینی بۆ دەکرێت، نەک بە بەرنامەی خۆکاری بێسوود.',
+          proof: 'دەستگەیشتنی سنووردار و تۆمارکردنی هەموو هەنگاوەکان',
+        },
+        {
+          id: 'gdpr',
+          tag: 'GDPR · مافی زانیاری',
+          title: 'گونجانی GDPR و پاراستنی زانیاری',
+          body: 'ئێمە کەمترین زانیاری کۆدەکەینەوە و مافی تەواوت پێدەدەین بۆ دابەزاندن یان سڕینەوەی یەکجاریی تۆمارەکانت لە هەر کاتێکدا.',
+          proof: 'داواکاریی هەناردەکردن و سڕینەوە لە ناو پۆرتاڵەکەتدا',
+        },
+      ],
+    },
+    successStoriesSection: {
+      eyebrow: 'چیرۆکە سەرکەوتووەکان',
+      heading: 'ئەنجامی ڕاستەقینە لە لایەن کڕیارە پارێزراوەکانمانەوە.',
+      intro:
+        'هەموو ناو و وردەکارییە کەسییەکان بە نهێنی دەهێڵرێنەوە بۆ پاراستنی تایبەتمەندیی کڕیاران، لە هەمان کاتدا کاریگەریی ڕاپۆرتی بەڵگەدار دەردەخەن.',
+      prevLabel: 'چیرۆکی سەرکەوتووی پێشوو',
+      nextLabel: 'چیرۆکی سەرکەوتووی دواتر',
+      showingLabel: (start: number, end: number, total: number) =>
+        `پیشاندانی ${start}–${end} لە کۆی ${total} کەیسی سەلمێنراو`,
+      items: [
+        {
+          id: 'story-1',
+          category: 'هەژماری ساختە',
+          platform: 'ئینستاگرام',
+          quote:
+            'کەسێک وێنەکانی منی بردبوو و بە ناومەوە داوای پارەی لە کڕیاران دەکرد. تیمی Full Remove هەموو بەڵگەکانی ئەرشیف کرد و لە ٤ ڕۆژدا هەژمارەکە داخرا.',
+          client: 'س. ک. — وێنەگر',
+          outcome: 'هەژمارە ساختەکە سڕایەوە',
+          turnaround: '٤ ڕۆژ',
+        },
+        {
+          id: 'story-2',
+          category: 'ماڵپەڕی کۆپی',
+          platform: 'دۆمەین و هۆست',
+          quote:
+            'ماڵپەڕێکی ساختە لۆگۆ و فرۆشگاکەمانی کۆپی کردبوو. ڕاپۆرتە فەرمییەکەیان بۆ تۆمارکەری دۆمەینەکە بووە هۆی ڕاگرتنی ماڵپەڕەکە پێش زیانی زیاتر.',
+          client: 'م. ئا. — دامەزرێنەری براند',
+          outcome: 'دۆمەینە ساختەکە ڕاگیرا',
+          turnaround: '٦ ڕۆژ',
+        },
+        {
+          id: 'story-3',
+          category: 'دیپفەیک',
+          platform: 'تیکتۆک و ماڵپەڕەکان',
+          quote:
+            'دۆزینەوەی ڤیدیۆیەکی دەستکاریکراو بە دەنگی خۆم زۆر ترسناک بوو. پسپۆڕان بەراوردی دەنگە ڕەسەنەکانیان کرد تا هەموو کۆپییەکان لابران.',
+          client: 'ن. د. — ڕاهێنەری تەندروستی',
+          outcome: 'هەموو کۆپییەکان لابران',
+          turnaround: '٥ ڕۆژ',
+        },
+        {
+          id: 'story-4',
+          category: 'وێنەی تایبەت',
+          platform: 'هۆستەکانی وێنە',
+          quote:
+            'بە نهێنیپارێزیی تەواوەوە مامەڵەیان لەگەڵ کەیسەکەم کرد و دوای دڵنیابوون لە سڕینەوەی وێنەکان ئاگاداری فەرمییان بۆ ناردم.',
+          client: 'ڕ. ح. — کڕیاری تایبەت',
+          outcome: 'لابردنی وێنەکان سەلمێنرا',
+          turnaround: '٣ ڕۆژ',
+        },
+        {
+          id: 'story-5',
+          category: 'فریاکەوتنی بەپەلە',
+          platform: 'پلاتفۆرمی ڤیدیۆ',
+          quote:
+            'لە چەند کاتژمێرێکدا دوای ئاگادارکردنەوەی هەڕەشەی باجگیری، بەڵگەکانیان لە خەزێنەی کۆدکراودا پاراست و ڕاپۆرتی بەپەلەیان نارد.',
+          client: 'ت. ب. — بەڕێوەبەری کارگێڕی',
+          outcome: 'لابردنی فریاگوزاری خێرا',
+          turnaround: '٣٦ کاتژمێر',
+        },
+        {
+          id: 'story-6',
+          category: 'مافی لەبەرگرتنەوە',
+          platform: 'یوتیوب و وێب',
+          quote:
+            'کۆرسە فرۆشراوەکانمان بەبێ مۆڵەت بڵاودەکرانەوە. تیمەکە داواکاریی DMCAـی ئامادە کرد و تا دڵنیابوون لە هەموو بەستەرەکان بەدواداچوونی کرد.',
+          client: 'ل. م. — خاوەنی کۆرس',
+          outcome: 'داواکاری DMCA جێبەجێ کرا',
+          turnaround: '٧ ڕۆژ',
+        },
+      ],
     },
     faqSection: {
       eyebrow: 'پرسیارە باوەکان',

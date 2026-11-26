@@ -3,11 +3,15 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   FileCheck2,
   Lock,
   MessageSquare,
+  Quote,
   Scale,
   ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import { SITE_TRANSLATIONS, type LangCode } from '../data/translations';
 import {
@@ -48,9 +52,50 @@ function getOrCreateSessionKey(): string {
 export function LandingPage({ lang, onChangeLang, onNavigate }: LandingPageProps) {
   const copy = SITE_TRANSLATIONS[lang];
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
+  const [storyIndex, setStoryIndex] = useState(0);
+  const [visibleStories, setVisibleStories] = useState(3);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [vaultImgFailed, setVaultImgFailed] = useState(false);
   const [deskImgFailed, setDeskImgFailed] = useState(false);
+
+  useEffect(() => {
+    const syncVisibleCount = () => {
+      if (window.innerWidth < 768) {
+        setVisibleStories(1);
+      } else if (window.innerWidth < 1024) {
+        setVisibleStories(2);
+      } else {
+        setVisibleStories(3);
+      }
+    };
+    syncVisibleCount();
+    window.addEventListener('resize', syncVisibleCount);
+    return () => window.removeEventListener('resize', syncVisibleCount);
+  }, []);
+
+  const totalStories = copy.successStoriesSection.items.length;
+  const maxStoryStart = Math.max(0, totalStories - visibleStories);
+  const safeStoryIndex = Math.min(storyIndex, maxStoryStart);
+  const activeStorySlice = useMemo(
+    () =>
+      copy.successStoriesSection.items
+        .slice(safeStoryIndex, safeStoryIndex + visibleStories)
+        .map((item, offset) => ({
+          ...item,
+          orderNumber: safeStoryIndex + offset + 1,
+        })),
+    [copy.successStoriesSection.items, safeStoryIndex, visibleStories]
+  );
+
+  const handlePrevStory = () => {
+    const count = maxStoryStart + 1;
+    setStoryIndex((prev) => (Math.min(prev, maxStoryStart) - 1 + count) % count);
+  };
+
+  const handleNextStory = () => {
+    const count = maxStoryStart + 1;
+    setStoryIndex((prev) => (Math.min(prev, maxStoryStart) + 1) % count);
+  };
 
   const [issueCategory, setIssueCategory] = useState<TriageIssueCategory>('impostor_account');
   const [estPlatform, setEstPlatform] = useState<string>('Instagram');
@@ -801,19 +846,17 @@ export function LandingPage({ lang, onChangeLang, onNavigate }: LandingPageProps
                     key={plan.code}
                     className={`flex flex-col justify-between rounded-2xl border p-6 transition-all duration-150 hover:-translate-y-0.5 ${
                       featured
-                        ? 'border-[#0057B8] bg-white ring-1 ring-[#0057B8]/20 shadow-[0_18px_40px_-20px_rgba(0,87,184,0.24)]'
-                        : 'border-[#DCE7F2] bg-white shadow-[0_4px_20px_-14px_rgba(4,30,74,0.08)]'
+                        ? 'border-[#0057B8] border-t-2 border-t-[#0057B8] bg-white ring-1 ring-[#0057B8]/15 shadow-[0_18px_40px_-20px_rgba(0,87,184,0.24)]'
+                        : 'border-[#DCE7F2] bg-white shadow-[0_4px_20px_-14px_rgba(4,30,74,0.08)] hover:border-[#00869E]/45 hover:shadow-[0_14px_30px_-18px_rgba(4,30,74,0.14)]'
                     }`}
                   >
                     <div>
-                      <div className="min-h-[20px]">
-                        {plan.badge && (
-                          <span className="text-xs font-semibold text-[#00758A]">
-                            {plan.badge}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="mt-1 font-display text-lg font-bold leading-snug text-[#041E4A]">
+                      {plan.badge && (
+                        <div className="mb-1.5 text-xs font-semibold text-[#00758A]">
+                          {plan.badge}
+                        </div>
+                      )}
+                      <h3 className="font-display text-lg font-bold leading-snug text-[#041E4A]">
                         {plan.name}
                       </h3>
                       <div className="mt-4 flex items-baseline gap-1.5 border-b border-[#EFF5FA] pb-4">
@@ -855,7 +898,211 @@ export function LandingPage({ lang, onChangeLang, onNavigate }: LandingPageProps
           </div>
         </section>
 
-        {/* 6. FAQ ACCORDION — Crisp Pure White */}
+        {/* 6. SECURITY & TRUST — Pure White Confidence Band */}
+        <section
+          id="security-trust"
+          data-testid="security-trust-section"
+          className="border-b border-[#DCE7F2] bg-white py-20 lg:py-24"
+        >
+          <div className="mx-auto max-w-[1240px] px-5 sm:px-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-[700px]">
+                <p className="text-sm font-semibold text-[#00758A]">
+                  {copy.securityTrustSection.eyebrow}
+                </p>
+                <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-[#041E4A] sm:text-4xl [text-wrap:balance]">
+                  {copy.securityTrustSection.heading}
+                </h2>
+                <p className="mt-3 text-base leading-relaxed text-slate-600">
+                  {copy.securityTrustSection.intro}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('/privacy')}
+                className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-2.5 text-xs font-semibold text-[#041E4A] transition-colors duration-150 hover:border-[#0057B8]/40 hover:bg-[#EFF7FC] hover:text-[#0057B8] cursor-pointer whitespace-nowrap"
+              >
+                <ShieldCheck className="h-4 w-4 text-[#00758A]" />
+                <span>{copy.securityTrustSection.privacyAction}</span>
+                <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+              </button>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {copy.securityTrustSection.items.map((item) => {
+                const Icon =
+                  item.id === 'encryption'
+                    ? Lock
+                    : item.id === 'experts'
+                      ? UserCheck
+                      : ShieldCheck;
+                const badgeClass =
+                  item.id === 'encryption'
+                    ? 'border-[#0057B8]/20 bg-[#EFF7FC] text-[#0057B8]'
+                    : item.id === 'experts'
+                      ? 'border-[#00869E]/25 bg-[#E6F6F8] text-[#00758A]'
+                      : 'border-[#041E4A] bg-[#041E4A] text-[#00C8D7]';
+
+                return (
+                  <article
+                    key={item.id}
+                    className="flex flex-col justify-between rounded-2xl border border-[#DCE7F2] bg-[#F7FAFC] p-6 sm:p-7 transition-all duration-150 hover:-translate-y-0.5 hover:border-[#00869E]/45 hover:bg-white hover:shadow-[0_14px_30px_-18px_rgba(4,30,74,0.16)]"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div
+                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${badgeClass}`}
+                        >
+                          <Icon className="h-5 w-5" aria-hidden="true" />
+                        </div>
+                        <span className="text-[11px] font-semibold ltr:font-mono ltr:tracking-wider text-slate-500">
+                          {item.tag}
+                        </span>
+                      </div>
+                      <h3 className="mt-5 font-display text-lg font-bold text-[#041E4A]">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2.5 text-sm leading-relaxed text-slate-600">
+                        {item.body}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-start gap-2.5 border-t border-[#DCE7F2] pt-4 text-xs font-medium text-[#041E4A]">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#00758A]" />
+                      <span>{item.proof}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* 7. SUCCESS STORIES CAROUSEL — Cool Mist Band */}
+        <section
+          id="success-stories"
+          data-testid="success-stories-section"
+          aria-roledescription="carousel"
+          aria-label={copy.successStoriesSection.eyebrow}
+          className="border-b border-[#DCE7F2] bg-[#EFF5FA] py-20 lg:py-24"
+        >
+          <div className="mx-auto max-w-[1240px] px-5 sm:px-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-[700px]">
+                <p className="text-sm font-semibold text-[#00758A]">
+                  {copy.successStoriesSection.eyebrow}
+                </p>
+                <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-[#041E4A] sm:text-4xl [text-wrap:balance]">
+                  {copy.successStoriesSection.heading}
+                </h2>
+                <p className="mt-3 text-base leading-relaxed text-slate-600">
+                  {copy.successStoriesSection.intro}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  data-testid="stories-prev-btn"
+                  onClick={handlePrevStory}
+                  aria-label={copy.successStoriesSection.prevLabel}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#C7D7E8] bg-white text-[#041E4A] transition-colors duration-150 hover:border-[#0057B8] hover:bg-[#EFF7FC] hover:text-[#0057B8] cursor-pointer"
+                >
+                  <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  data-testid="stories-next-btn"
+                  onClick={handleNextStory}
+                  aria-label={copy.successStoriesSection.nextLabel}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#C7D7E8] bg-white text-[#041E4A] transition-colors duration-150 hover:border-[#0057B8] hover:bg-[#EFF7FC] hover:text-[#0057B8] cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {activeStorySlice.map((story) => (
+                <article
+                  key={`${story.id}-${safeStoryIndex}`}
+                  className="flex flex-col justify-between rounded-2xl border border-[#DCE7F2] bg-white p-6 sm:p-7 shadow-[0_12px_28px_-20px_rgba(4,30,74,0.14)] transition-all duration-150 hover:-translate-y-0.5 hover:border-[#00869E]/45 hover:shadow-[0_16px_36px_-20px_rgba(4,30,74,0.2)] animate-[frFadeUp_180ms_cubic-bezier(0.16,1,0.3,1)]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-3 border-b border-[#EFF5FA] pb-4">
+                      <div>
+                        <div className="text-xs font-semibold text-[#00758A]">
+                          {story.category}
+                        </div>
+                        <div className="mt-0.5 text-[11px] font-medium text-slate-500">
+                          {story.platform}
+                        </div>
+                      </div>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#0057B8]/20 bg-[#EFF7FC] text-[#0057B8]">
+                        <Quote className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                    </div>
+
+                    <figure className="mt-5">
+                      <blockquote className="text-sm leading-relaxed text-[#041E4A] sm:text-[15px]">
+                        “{story.quote}”
+                      </blockquote>
+                      <figcaption className="mt-4 text-xs font-bold text-slate-600">
+                        {story.client}
+                      </figcaption>
+                    </figure>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-[#EFF5FA] pt-4 text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span>{story.outcome}</span>
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-500 ltr:font-mono tabular-nums">
+                      {story.turnaround}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+              <div
+                data-testid="stories-counter"
+                className="text-xs font-medium text-slate-600 tabular-nums"
+              >
+                {copy.successStoriesSection.showingLabel(
+                  safeStoryIndex + 1,
+                  Math.min(safeStoryIndex + visibleStories, totalStories),
+                  totalStories
+                )}
+              </div>
+              <div className="flex items-center gap-2" role="tablist" aria-label={copy.successStoriesSection.eyebrow}>
+                {Array.from({ length: maxStoryStart + 1 }, (_, idx) => {
+                  const active = idx === safeStoryIndex;
+                  const targetItem = copy.successStoriesSection.items[idx];
+                  return (
+                    <button
+                      key={targetItem.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      aria-label={`${targetItem.category} (${idx + 1}/${maxStoryStart + 1})`}
+                      onClick={() => setStoryIndex(idx)}
+                      className={`h-2 rounded-sm transition-all duration-150 cursor-pointer ${
+                        active
+                          ? 'w-8 bg-[#0057B8]'
+                          : 'w-4 bg-[#C7D7E8] hover:bg-[#00869E]/60'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 8. FAQ ACCORDION — Crisp White Surface */}
         <section id="faq" className="border-b border-[#DCE7F2] bg-white py-20 lg:py-24">
           <div className="mx-auto max-w-[920px] px-5 sm:px-8">
             <p className="text-sm font-semibold text-[#00758A]">{copy.faqSection.eyebrow}</p>
@@ -883,7 +1130,9 @@ export function LandingPage({ lang, onChangeLang, onNavigate }: LandingPageProps
                       />
                     </button>
                     {isOpen && (
-                      <p className="pb-5 text-sm leading-relaxed text-slate-600">{item.a}</p>
+                      <p className="pb-5 text-sm leading-relaxed text-slate-600 animate-[frFadeUp_150ms_cubic-bezier(0.16,1,0.3,1)]">
+                        {item.a}
+                      </p>
                     )}
                   </div>
                 );
@@ -987,7 +1236,7 @@ export function LandingPage({ lang, onChangeLang, onNavigate }: LandingPageProps
 
               <form
                 onSubmit={handleSubmitInquiry}
-                className="rounded-2xl border border-white/10 bg-[#07224D] p-6 sm:p-8 lg:col-span-7"
+                className="rounded-2xl border border-white/10 bg-[#07224D] p-6 sm:p-8 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.45)] lg:col-span-7"
               >
                 <input
                   type="text"

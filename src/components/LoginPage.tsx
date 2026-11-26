@@ -111,8 +111,8 @@ export function LoginPage({
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#041E4A] flex flex-col">
-      <header className="border-b border-[#DCE7F2] bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1160px] items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+      <header className="border-b border-[#DCE7F2] bg-white">
+        <div className="mx-auto flex max-w-[1160px] items-center justify-between gap-4 px-5 py-3 sm:px-8">
           <div className="flex items-center gap-4 min-w-0">
             <button
               type="button"
@@ -247,10 +247,12 @@ export function LoginPage({
                   disabled={busy}
                   data-testid="demo-customer-btn"
                   onClick={() => handleDemoLogin('customer', '/workspace')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#0057B8]/50 hover:bg-white disabled:opacity-60 cursor-pointer"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#0057B8]/50 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <UserCheck className="h-4 w-4 text-[#0057B8] shrink-0" />
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#0057B8]/15 bg-[#EFF7FC] text-[#0057B8]">
+                      <UserCheck className="h-4 w-4" />
+                    </span>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-[#041E4A]">
                         {t.demoCustomerTitle}
@@ -266,10 +268,12 @@ export function LoginPage({
                   disabled={busy}
                   data-testid="demo-staff-btn"
                   onClick={() => handleDemoLogin('staff', '/staff')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#00758A]/60 hover:bg-white disabled:opacity-60 cursor-pointer"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#00758A]/60 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Users className="h-4 w-4 text-[#00758A] shrink-0" />
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#00869E]/20 bg-[#E6F6F8] text-[#00758A]">
+                      <Users className="h-4 w-4" />
+                    </span>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-[#041E4A]">{t.demoStaffTitle}</div>
                       <div className="text-xs text-slate-500">{t.demoStaffDesc}</div>
@@ -283,10 +287,12 @@ export function LoginPage({
                   disabled={busy}
                   data-testid="demo-admin-btn"
                   onClick={() => handleDemoLogin('staff', '/platform-ops')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#041E4A] bg-[#041E4A] px-4 py-3 text-start transition hover:bg-[#07224D] disabled:opacity-60 cursor-pointer"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#041E4A] bg-[#041E4A] px-4 py-3 text-start transition hover:bg-[#07224D] hover:shadow-sm disabled:opacity-60 cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <ShieldCheck className="h-4 w-4 text-[#00C8D7] shrink-0" />
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-[#07224D] text-[#00C8D7]">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-white">{t.demoAdminTitle}</div>
                       <div className="text-xs text-slate-300">{t.demoAdminDesc}</div>

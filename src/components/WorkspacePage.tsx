@@ -1089,7 +1089,7 @@ export function WorkspacePage({
               type="button"
               data-testid="workspace-quick-jump-btn"
               onClick={() => setQuickJumpOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] transition cursor-pointer shrink-0"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] px-2.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-white hover:text-[#041E4A] transition cursor-pointer shrink-0"
               title={`${t.enhancements.quickJump.buttonLabel} (Ctrl+K)`}
             >
               <Search className="h-3.5 w-3.5 text-[#0057B8]" />
@@ -1118,7 +1118,7 @@ export function WorkspacePage({
             <button
               type="button"
               onClick={() => setTab('submit')}
-              className="rounded-lg bg-[#0057B8] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#004494] transition cursor-pointer whitespace-nowrap shrink-0"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#0057B8] px-3.5 text-xs font-semibold text-white hover:bg-[#004494] transition cursor-pointer whitespace-nowrap shrink-0"
             >
               {t.workspace.newCaseBtn}
             </button>
@@ -1206,10 +1206,10 @@ export function WorkspacePage({
                         </div>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2 min-w-0">
+                      <div className="grid min-w-0 divide-y divide-[#DCE7F2] overflow-hidden rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] md:grid-cols-2 md:divide-x md:divide-y-0">
                         <div
                           data-testid="summary-active-cases"
-                          className="min-w-0 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] p-5 flex flex-col justify-between gap-3"
+                          className="min-w-0 p-5 flex flex-col justify-between gap-3"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-semibold text-slate-600">
@@ -1239,7 +1239,7 @@ export function WorkspacePage({
 
                         <div
                           data-testid="summary-avg-turnaround"
-                          className="min-w-0 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] p-5 flex flex-col justify-between gap-3"
+                          className="min-w-0 p-5 flex flex-col justify-between gap-3"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-semibold text-slate-600">
@@ -1276,7 +1276,7 @@ export function WorkspacePage({
                       {kpiCards.map((kpi) => (
                         <div
                           key={kpi.label}
-                          className="rounded-2xl border border-[#DCE7F2] bg-white p-5 shadow-xs"
+                          className="rounded-2xl border border-[#DCE7F2] bg-white p-5 shadow-xs transition-colors duration-150 hover:border-[#C7D7E8]"
                         >
                           <div className="text-xs font-medium text-slate-500">{kpi.label}</div>
                           <div className="mt-2 font-display text-3xl font-extrabold tabular-nums text-[#041E4A]">

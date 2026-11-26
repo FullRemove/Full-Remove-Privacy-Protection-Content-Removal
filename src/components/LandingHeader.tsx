@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { SITE_TRANSLATIONS, type LangCode } from '../data/translations';
 import { BrandLogoMark } from './BrandLogoMark';
@@ -17,7 +17,15 @@ export function LandingHeader({
   subpage = false,
 }: LandingHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const copy = SITE_TRANSLATIONS[lang];
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleAnchor = (hash: string) => {
     setMobileOpen(false);
@@ -34,8 +42,12 @@ export function LandingHeader({
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#DCE7F2] bg-white">
-      <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-8 px-5 py-2.5 sm:px-8">
+    <header
+      className={`sticky top-0 z-40 border-b border-[#DCE7F2] bg-white transition-shadow duration-200 ${
+        scrolled ? 'shadow-[0_8px_24px_-18px_rgba(4,30,74,0.22)]' : ''
+      }`}
+    >
+      <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-5 py-2 sm:px-8 sm:py-2.5">
         {/* Zone 1: Official Full Remove Brand Lockup */}
         <a
           href="/"
@@ -76,18 +88,22 @@ export function LandingHeader({
         </nav>
 
         {/* Zone 3: Language Links + Primary CTA */}
-        <div className="flex shrink-0 items-center gap-4">
-          <div className="hidden sm:inline-flex items-center gap-1" role="group" aria-label="Language switcher">
+        <div className="flex shrink-0 items-center gap-3.5">
+          <div
+            className="hidden sm:inline-flex h-9 items-center gap-0.5 rounded-lg border border-[#DCE7F2] bg-[#EFF5FA] p-0.5"
+            role="group"
+            aria-label="Language switcher"
+          >
             {(['en', 'ar', 'ku'] as LangCode[]).map((code) => (
               <button
                 key={code}
                 type="button"
                 data-testid={`header-lang-${code}`}
                 onClick={() => onChangeLang(code)}
-                className={`px-2 py-1 text-xs font-semibold uppercase tracking-wide transition-colors rounded-md cursor-pointer ${
+                className={`inline-flex h-full items-center justify-center px-2.5 text-[11px] font-semibold uppercase tracking-wide transition-colors rounded-md cursor-pointer ${
                   lang === code
-                    ? 'bg-[#041E4A] text-white'
-                    : 'text-slate-500 hover:bg-[#EFF5FA] hover:text-[#041E4A]'
+                    ? 'bg-[#041E4A] text-white shadow-xs'
+                    : 'text-slate-500 hover:text-[#041E4A]'
                 }`}
               >
                 {code.toUpperCase()}
@@ -98,7 +114,7 @@ export function LandingHeader({
           <button
             type="button"
             onClick={() => onNavigate('/login')}
-            className="hidden sm:inline-flex shrink-0 whitespace-nowrap items-center justify-center rounded-lg bg-[#0057B8] px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-[#004494] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0057B8] cursor-pointer"
+            className="hidden sm:inline-flex h-9 shrink-0 whitespace-nowrap items-center justify-center rounded-lg bg-[#0057B8] px-4 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-[#004494] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0057B8] cursor-pointer"
           >
             {copy.nav.getStarted}
           </button>
@@ -106,7 +122,7 @@ export function LandingHeader({
           <button
             type="button"
             onClick={() => setMobileOpen((prev) => !prev)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-[#041E4A] hover:bg-[#EFF5FA] lg:hidden cursor-pointer"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#DCE7F2] text-[#041E4A] hover:bg-[#EFF5FA] lg:hidden cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -115,7 +131,7 @@ export function LandingHeader({
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-[#DCE7F2] bg-white px-5 py-4 lg:hidden">
+        <div className="border-t border-[#DCE7F2] bg-white px-5 py-4 lg:hidden animate-[frFadeUp_160ms_cubic-bezier(0.16,1,0.3,1)]">
           <div className="flex flex-col gap-1">
             {[
               { href: '#services', label: copy.nav.services },

@@ -15,7 +15,7 @@ export function ContactWidget({ lang, onJumpToInquiry }: ContactWidgetProps) {
     <div className="fixed bottom-5 end-5 z-40 no-print">
       {open && (
         <div
-          className="mb-3 w-[320px] max-w-[calc(100vw-2.5rem)] rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-[0_24px_48px_-16px_rgba(15,23,42,0.18)]"
+          className="mb-3 w-[320px] max-w-[calc(100vw-2.5rem)] rounded-2xl border border-[#DCE7F2] bg-white p-5 text-[#041E4A] shadow-[0_24px_48px_-16px_rgba(4,30,74,0.22)] animate-[frFadeUp_160ms_cubic-bezier(0.16,1,0.3,1)]"
           role="dialog"
           aria-label={copy.widget.title}
         >
