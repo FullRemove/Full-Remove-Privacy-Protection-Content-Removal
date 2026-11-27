@@ -721,7 +721,8 @@ export function filterAndSortCases(
   cases: ProtectionCase[],
   query: string,
   sort: 'newest' | 'oldest' | 'case_az' | 'status' | 'sla_urgent',
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  statusLabelResolver?: (status: CaseStatus) => string
 ): ProtectionCase[] {
   const normalized = query.trim().toLowerCase();
   const filtered = normalized
@@ -732,6 +733,8 @@ export function filterAndSortCases(
           c.title,
           c.platform,
           c.status,
+          c.status.replace(/_/g, ' '),
+          statusLabelResolver ? statusLabelResolver(c.status) : '',
           c.customer_name,
           c.customer_email,
         ].some((val) => String(val || '').toLowerCase().includes(normalized))
@@ -2117,10 +2120,17 @@ export function filterWorkspaceCases(
     query: string;
     activeOnly?: boolean;
     sort?: 'newest' | 'oldest' | 'case_az' | 'status';
+    statusLabelResolver?: (status: CaseStatus) => string;
   }
 ): ProtectionCase[] {
   const pool = opts.activeOnly ? cases.filter((c) => isCaseActiveStatus(c.status)) : cases;
-  return filterAndSortCases(pool, opts.query, opts.sort || 'newest');
+  return filterAndSortCases(
+    pool,
+    opts.query,
+    opts.sort || 'newest',
+    Date.now(),
+    opts.statusLabelResolver
+  );
 }
 
 export type CaseJourneyMilestoneId =
@@ -2782,6 +2792,415 @@ export function buildPlatformAnalyticsCsv(breakdown: PlatformAnalyticsBreakdown)
     'Average Turnaround': row.averageLabel,
   }));
   return buildCsv(headers, rows);
+}
+
+export type CaseActivityLogKind = 'status_update' | 'admin_action';
+export type CaseActivityActorRole = 'client' | 'staff' | 'platform' | 'system';
+
+export interface CaseActivityLogEntry {
+  id: string;
+  caseId: string;
+  caseNumber: string;
+  caseTitle: string;
+  timestamp: string;
+  kind: CaseActivityLogKind;
+  eventType: string;
+  actorRole: CaseActivityActorRole;
+  description: string;
+  statusTag?: string;
+  referenceMeta?: string;
+}
+
+export interface CaseActivityLogFilterOptions {
+  kind?: 'all' | CaseActivityLogKind;
+  caseId?: string;
+  query?: string;
+  order?: 'asc' | 'desc';
+}
+
+export interface CaseActivityLogSummary {
+  total: number;
+  statusUpdates: number;
+  adminActions: number;
+}
+
+const CASE_STATUS_ACTIVITY_TYPES = new Set<string>([
+  'submitted',
+  'reviewing',
+  'needs_information',
+  'approved',
+  'submitted_to_platform',
+  'action_taken',
+  'resolved',
+  'rejected',
+  'disputed',
+  'closed',
+]);
+
+const ACTIVITY_TYPE_SORT_RANK: Record<string, number> = {
+  submitted: 10,
+  evidence_added: 20,
+  staff_evidence: 22,
+  reviewing: 30,
+  needs_information: 32,
+  approved: 35,
+  submitted_to_platform: 40,
+  platform_submission: 42,
+  platform_response: 50,
+  action_taken: 55,
+  staff_message: 58,
+  watchlist_monitor: 60,
+  verification_check: 65,
+  watchlist_sweep: 66,
+  resolved: 70,
+  rejected: 70,
+  disputed: 72,
+  closed: 75,
+};
+
+export function buildCaseActivityLogEntries(caseItem: ProtectionCase): CaseActivityLogEntry[] {
+  interface RankedLogEntry {
+    entry: CaseActivityLogEntry;
+    ms: number;
+    rank: number;
+  }
+
+  const ranked: RankedLogEntry[] = [];
+  const staffEvidence = (caseItem.evidence || []).filter((ev) => ev.uploaded_by_role === 'staff');
+  const staffEvidenceTitles = new Set(staffEvidence.map((ev) => ev.title.trim().toLowerCase()));
+  const staffEvidenceHashes = new Set(
+    staffEvidence.map((ev) => (ev.sha256_preview || '').trim().toLowerCase()).filter(Boolean)
+  );
+
+  // 1. Historical status updates & customer-visible administrative workflow actions
+  for (const act of caseItem.activity || []) {
+    if (act.visibility === 'staff') continue;
+
+    if (act.activity_type === 'evidence_added') {
+      const msgLower = (act.message || '').toLowerCase();
+      const matchesStaffUpload =
+        Array.from(staffEvidenceTitles).some((title) => title && msgLower.includes(title)) ||
+        Array.from(staffEvidenceHashes).some((hash) => hash && msgLower.includes(hash));
+      if (matchesStaffUpload) {
+        continue;
+      }
+    }
+
+    const isStatusUpdate = CASE_STATUS_ACTIVITY_TYPES.has(act.activity_type);
+    const isClientSubmittedOrRecheck =
+      act.activity_type === 'submitted' ||
+      (act.activity_type === 'disputed' && (act.message || '').toLowerCase().startsWith('re-check'));
+
+    const actorRole: CaseActivityActorRole = isClientSubmittedOrRecheck ? 'client' : 'staff';
+
+    ranked.push({
+      ms: new Date(act.created_at).getTime() || 0,
+      rank: ACTIVITY_TYPE_SORT_RANK[act.activity_type] ?? 38,
+      entry: {
+        id: `log-act-${act.id}`,
+        caseId: caseItem.id,
+        caseNumber: caseItem.case_number,
+        caseTitle: caseItem.title,
+        timestamp: act.created_at,
+        kind: isStatusUpdate ? 'status_update' : 'admin_action',
+        eventType: act.activity_type,
+        actorRole,
+        description: act.message,
+        statusTag: isStatusUpdate ? act.activity_type : undefined,
+      },
+    });
+  }
+
+  // 2. Administrative platform filings & platform responses
+  for (const sub of caseItem.submissions || []) {
+    const hasPlatformResponse =
+      Boolean(sub.response_summary && sub.response_summary.trim()) ||
+      ['acknowledged', 'under_review', 'action_taken', 'rejected', 'disputed'].includes(sub.status);
+
+    const eventType = hasPlatformResponse ? 'platform_response' : 'platform_submission';
+    const referenceMeta = sub.external_reference
+      ? `Ref #${sub.external_reference}`
+      : formatActivityActionLabel(sub.submission_channel);
+
+    ranked.push({
+      ms: new Date(sub.submitted_at).getTime() || 0,
+      rank: ACTIVITY_TYPE_SORT_RANK[eventType],
+      entry: {
+        id: `log-sub-${sub.id}`,
+        caseId: caseItem.id,
+        caseNumber: caseItem.case_number,
+        caseTitle: caseItem.title,
+        timestamp: sub.submitted_at,
+        kind: 'admin_action',
+        eventType,
+        actorRole: hasPlatformResponse ? 'platform' : 'staff',
+        description: hasPlatformResponse
+          ? `${sub.platform}: ${sub.response_summary || formatStatusLabel(sub.status)}`
+          : `${sub.platform} (${formatActivityActionLabel(sub.submission_channel)})`,
+        statusTag: sub.status,
+        referenceMeta,
+      },
+    });
+  }
+
+  // 3. Administrative link availability & removal verification checks
+  for (const ver of caseItem.verifications || []) {
+    const isSweep = Boolean(ver.notes && ver.notes.startsWith('[Watchlist sweep]'));
+    const eventType = isSweep ? 'watchlist_sweep' : 'verification_check';
+    ranked.push({
+      ms: new Date(ver.checked_at).getTime() || 0,
+      rank: ACTIVITY_TYPE_SORT_RANK[eventType],
+      entry: {
+        id: `log-ver-${ver.id}`,
+        caseId: caseItem.id,
+        caseNumber: caseItem.case_number,
+        caseTitle: caseItem.title,
+        timestamp: ver.checked_at,
+        kind: 'admin_action',
+        eventType,
+        actorRole: isSweep ? 'system' : 'staff',
+        description: ver.notes || ver.checked_url,
+        statusTag: ver.result,
+        referenceMeta: ver.checked_url,
+      },
+    });
+  }
+
+  // 4. Staff-archived verification evidence
+  for (const ev of staffEvidence) {
+    const refParts = [
+      ev.file_name || '',
+      ev.sha256_preview ? `SHA256:${ev.sha256_preview}` : '',
+    ].filter(Boolean);
+
+    ranked.push({
+      ms: new Date(ev.created_at).getTime() || 0,
+      rank: ACTIVITY_TYPE_SORT_RANK.staff_evidence,
+      entry: {
+        id: `log-ev-${ev.id}`,
+        caseId: caseItem.id,
+        caseNumber: caseItem.case_number,
+        caseTitle: caseItem.title,
+        timestamp: ev.created_at,
+        kind: 'admin_action',
+        eventType: 'staff_evidence',
+        actorRole: 'staff',
+        description: ev.notes ? `${ev.title} — ${ev.notes}` : ev.title,
+        referenceMeta: refParts.join(' · ') || undefined,
+      },
+    });
+  }
+
+  // 5. Specialist administrative messages sent to client
+  for (const msg of caseItem.messages || []) {
+    if (msg.sender_role !== 'staff') continue;
+    ranked.push({
+      ms: new Date(msg.created_at).getTime() || 0,
+      rank: ACTIVITY_TYPE_SORT_RANK.staff_message,
+      entry: {
+        id: `log-msg-${msg.id}`,
+        caseId: caseItem.id,
+        caseNumber: caseItem.case_number,
+        caseTitle: caseItem.title,
+        timestamp: msg.created_at,
+        kind: 'admin_action',
+        eventType: 'staff_message',
+        actorRole: 'staff',
+        description: msg.message,
+      },
+    });
+  }
+
+  ranked.sort((a, b) => b.ms - a.ms || b.rank - a.rank || a.entry.id.localeCompare(b.entry.id));
+  return ranked.map((r) => r.entry);
+}
+
+export function filterCaseActivityLogEntries(
+  entries: CaseActivityLogEntry[],
+  options: CaseActivityLogFilterOptions = {}
+): CaseActivityLogEntry[] {
+  const kind = options.kind || 'all';
+  const caseId = options.caseId && options.caseId !== 'all' ? options.caseId : '';
+  const query = (options.query || '').trim().toLowerCase();
+  const order = options.order || 'desc';
+
+  const filtered = entries.filter((entry) => {
+    if (kind !== 'all' && entry.kind !== kind) return false;
+    if (caseId && entry.caseId !== caseId) return false;
+    if (query) {
+      const haystack = [
+        entry.caseNumber,
+        entry.caseTitle,
+        entry.eventType,
+        entry.description,
+        entry.statusTag || '',
+        entry.referenceMeta || '',
+      ]
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    const msA = new Date(a.timestamp).getTime() || 0;
+    const msB = new Date(b.timestamp).getTime() || 0;
+    if (msA !== msB) return order === 'asc' ? msA - msB : msB - msA;
+    const rankA = ACTIVITY_TYPE_SORT_RANK[a.eventType] ?? 38;
+    const rankB = ACTIVITY_TYPE_SORT_RANK[b.eventType] ?? 38;
+    if (rankA !== rankB) return order === 'asc' ? rankA - rankB : rankB - rankA;
+    return a.id.localeCompare(b.id);
+  });
+
+  return sorted;
+}
+
+export function buildWorkspaceCaseActivityLog(
+  cases: ProtectionCase[],
+  options: CaseActivityLogFilterOptions = {}
+): CaseActivityLogEntry[] {
+  const allEntries = cases.flatMap((c) => buildCaseActivityLogEntries(c));
+  return filterCaseActivityLogEntries(allEntries, options);
+}
+
+export function summarizeCaseActivityLog(
+  entries: CaseActivityLogEntry[]
+): CaseActivityLogSummary {
+  let statusUpdates = 0;
+  let adminActions = 0;
+  for (const entry of entries) {
+    if (entry.kind === 'status_update') statusUpdates += 1;
+    else adminActions += 1;
+  }
+  return {
+    total: entries.length,
+    statusUpdates,
+    adminActions,
+  };
+}
+
+export type CaseActivityVisualStatus = 'pending' | 'in_progress' | 'resolved' | 'attention';
+
+export function resolveCaseActivityVisualStatus(
+  entry: Pick<CaseActivityLogEntry, 'eventType' | 'statusTag' | 'description'>
+): CaseActivityVisualStatus {
+  const tag = (entry.statusTag || '').toLowerCase();
+  const evType = (entry.eventType || '').toLowerCase();
+
+  if (
+    tag === 'resolved' ||
+    tag === 'closed' ||
+    tag === 'action_taken' ||
+    tag === 'confirmed_removed' ||
+    evType === 'resolved' ||
+    evType === 'closed' ||
+    evType === 'action_taken'
+  ) {
+    return 'resolved';
+  }
+
+  if (tag === 'rejected' || tag === 'withdrawn' || evType === 'rejected') {
+    return 'attention';
+  }
+
+  if (
+    tag === 'submitted' ||
+    tag === 'needs_information' ||
+    tag === 'prepared' ||
+    tag === 'still_accessible' ||
+    tag === 'redirected' ||
+    tag === 'login_required' ||
+    tag === 'not_found_unclear' ||
+    evType === 'submitted' ||
+    evType === 'needs_information'
+  ) {
+    return 'pending';
+  }
+
+  if (
+    evType === 'watchlist_monitor' &&
+    (entry.description || '').toLowerCase().includes('paused')
+  ) {
+    return 'pending';
+  }
+
+  return 'in_progress';
+}
+
+export const SUPPORTED_EVIDENCE_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'] as const;
+export const SUPPORTED_EVIDENCE_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+] as const;
+export const MAX_EVIDENCE_FILE_BYTES = 3 * 1024 * 1024;
+
+export type EvidenceUploadValidationError = 'unsupported_type' | 'file_too_large';
+
+export type EvidenceUploadValidationResult =
+  | {
+      ok: true;
+      kind: 'pdf' | 'image';
+      normalizedMime: 'application/pdf' | 'image/jpeg' | 'image/png';
+      extension: 'pdf' | 'jpg' | 'jpeg' | 'png';
+    }
+  | {
+      ok: false;
+      reason: EvidenceUploadValidationError;
+    };
+
+export function validateEvidenceUploadFile(file: {
+  name: string;
+  type?: string;
+  size: number;
+}): EvidenceUploadValidationResult {
+  const name = String(file.name || '').trim().toLowerCase();
+  const ext = name.includes('.') ? name.split('.').pop() || '' : '';
+  const mime = String(file.type || '').trim().toLowerCase();
+
+  let normalizedMime: 'application/pdf' | 'image/jpeg' | 'image/png' | null = null;
+  let extension: 'pdf' | 'jpg' | 'jpeg' | 'png' | null = null;
+
+  if (mime === 'application/pdf' || ext === 'pdf') {
+    normalizedMime = 'application/pdf';
+    extension = 'pdf';
+  } else if (mime === 'image/png' || ext === 'png') {
+    normalizedMime = 'image/png';
+    extension = 'png';
+  } else if (mime === 'image/jpeg' || mime === 'image/jpg' || ext === 'jpg' || ext === 'jpeg') {
+    normalizedMime = 'image/jpeg';
+    extension = ext === 'jpeg' ? 'jpeg' : 'jpg';
+  }
+
+  if (!normalizedMime || !extension) {
+    return { ok: false, reason: 'unsupported_type' };
+  }
+
+  if (file.size > MAX_EVIDENCE_FILE_BYTES) {
+    return { ok: false, reason: 'file_too_large' };
+  }
+
+  return {
+    ok: true,
+    kind: normalizedMime === 'application/pdf' ? 'pdf' : 'image',
+    normalizedMime,
+    extension,
+  };
+}
+
+export function deriveDefaultEvidenceTitle(fileName: string): string {
+  const cleaned = String(fileName || '').trim().replace(/\.[^.]+$/, '');
+  return cleaned || 'Supporting evidence';
+}
+
+export function pickDefaultActiveCaseForUpload(cases: ProtectionCase[]): ProtectionCase | null {
+  const active = cases.filter((c) => isCaseActiveStatus(c.status));
+  if (active.length === 0) return null;
+  return [...active].sort(
+    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  )[0];
 }
 
 

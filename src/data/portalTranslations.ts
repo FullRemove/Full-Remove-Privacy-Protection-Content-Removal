@@ -134,6 +134,9 @@ export interface PortalCopy {
       resolved: { label: string; note: string };
     };
     search: {
+      globalPlaceholder: string;
+      globalAriaLabel: string;
+      viewMatchesBtn: (count: number) => string;
       overviewPlaceholder: string;
       casesPlaceholder: string;
       activeOnly: string;
@@ -811,6 +814,58 @@ export interface PortalCopy {
       notFoundBody: string;
       openLogin: string;
     };
+    caseActivityLog: {
+      title: string;
+      subtitle: string;
+      filters: {
+        all: string;
+        status: string;
+        admin: string;
+      };
+      allCasesOption: string;
+      searchPlaceholder: string;
+      sortNewest: string;
+      sortOldest: string;
+      summaryCounts: (total: number, statusUpdates: number, adminActions: number) => string;
+      kinds: {
+        status_update: string;
+        admin_action: string;
+      };
+      actors: {
+        client: string;
+        staff: string;
+        platform: string;
+        system: string;
+      };
+      eventLabels: Record<string, string>;
+      empty: string;
+      openCaseLabel: string;
+      visualStatuses: {
+        pending: string;
+        in_progress: string;
+        resolved: string;
+        attention: string;
+      };
+    };
+    evidenceDropZone: {
+      overviewTitle: string;
+      overviewSubtitle: string;
+      activeCaseLabel: string;
+      categoryLabel: string;
+      titleLabel: string;
+      titlePlaceholder: string;
+      notesPlaceholder: string;
+      noActiveCases: string;
+      dropPrompt: string;
+      browseBtn: string;
+      acceptedFormatsHint: string;
+      draggingHint: string;
+      unsupportedTypeError: string;
+      fileTooLargeError: string;
+      attachBtn: string;
+      attachingBtn: string;
+      stagedReady: string;
+    };
   };
 }
 
@@ -875,6 +930,10 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       login_required: 'Login required',
       active: 'Active',
       suspended: 'Paused',
+      under_review: 'Under review',
+      acknowledged: 'Acknowledged',
+      prepared: 'Prepared',
+      withdrawn: 'Withdrawn',
     },
     actions: {
       start_review: 'Start review',
@@ -1033,8 +1092,11 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         resolved: { label: 'Done', note: 'Checked and closed' },
       },
       search: {
-        overviewPlaceholder: 'Search by case number (e.g. FR-2026-1038) or platform...',
-        casesPlaceholder: 'Search by case ID, title, or platform...',
+        globalPlaceholder: 'Search cases by ID, title, or status...',
+        globalAriaLabel: 'Global case search by case ID, title, or status',
+        viewMatchesBtn: (count) => `View (${count})`,
+        overviewPlaceholder: 'Filter by case ID, title, or status (e.g. FR-2026-1038)...',
+        casesPlaceholder: 'Search by case ID, title, or status...',
         activeOnly: 'Open cases only',
         allCases: 'All cases',
         allStatuses: 'All statuses',
@@ -1777,6 +1839,79 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         notFoundBody: 'Double-check the seal code on your PDF certificate or contact the case owner.',
         openLogin: 'Open client portal',
       },
+      caseActivityLog: {
+        title: 'Case Activity Log',
+        subtitle: 'Historical status updates and administrative actions',
+        filters: {
+          all: 'All activity',
+          status: 'Status updates',
+          admin: 'Admin actions',
+        },
+        allCasesOption: 'All cases',
+        searchPlaceholder: 'Search log or ref #',
+        sortNewest: 'Newest first',
+        sortOldest: 'Oldest first',
+        summaryCounts: (total, statusUpdates, adminActions) =>
+          `${total} ${total === 1 ? 'entry' : 'entries'} · ${statusUpdates} status · ${adminActions} admin`,
+        kinds: {
+          status_update: 'Status update',
+          admin_action: 'Admin action',
+        },
+        actors: {
+          client: 'Client',
+          staff: 'Case Team',
+          platform: 'Platform',
+          system: 'Watchlist Monitor',
+        },
+        eventLabels: {
+          submitted: 'Case submitted',
+          reviewing: 'Investigation started',
+          needs_information: 'Information requested',
+          approved: 'Approved for filing',
+          submitted_to_platform: 'Submitted to platform',
+          action_taken: 'Platform action taken',
+          resolved: 'Removed / Resolved',
+          rejected: 'Case rejected',
+          disputed: 'Re-check opened',
+          closed: 'Case closed',
+          watchlist_monitor: 'URL watchlist updated',
+          platform_submission: 'Platform filing submitted',
+          platform_response: 'Platform response logged',
+          verification_check: 'Live link verification',
+          watchlist_sweep: 'Automated watchlist check',
+          staff_evidence: 'Staff verification evidence',
+          staff_message: 'Team status notice',
+          evidence_added: 'Evidence archived',
+        },
+        empty: 'No activity entries match this filter.',
+        openCaseLabel: 'Open case',
+        visualStatuses: {
+          pending: 'Pending',
+          in_progress: 'In Progress',
+          resolved: 'Resolved',
+          attention: 'Needs Review',
+        },
+      },
+      evidenceDropZone: {
+        overviewTitle: 'Attach supporting evidence',
+        overviewSubtitle:
+          'Drag and drop PDFs, JPEGs, or PNGs directly onto an active case. Files are encrypted with AES-256-GCM and fingerprinted with SHA-256.',
+        activeCaseLabel: 'Active case',
+        categoryLabel: 'Evidence type',
+        titleLabel: 'Document title',
+        titlePlaceholder: 'e.g. Official ID or platform notice screenshot',
+        notesPlaceholder: 'Optional context for your case analyst',
+        noActiveCases: 'All cases are currently resolved or closed.',
+        dropPrompt: 'Drag and drop a PDF, JPEG, or PNG document here',
+        browseBtn: 'Browse file',
+        acceptedFormatsHint: 'PDF, JPEG, or PNG · Max 3 MB',
+        draggingHint: 'Drop document to stage for upload',
+        unsupportedTypeError: 'Only PDF, JPEG, and PNG documents are supported.',
+        fileTooLargeError: 'File exceeds the 3 MB upload limit.',
+        attachBtn: 'Attach to active case',
+        attachingBtn: 'Encrypting & attaching...',
+        stagedReady: 'Ready for encrypted upload',
+      },
     },
   },
 
@@ -1840,6 +1975,10 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       login_required: 'يتطلب تسجيل دخول',
       active: 'نشط',
       suspended: 'موقوف مؤقتاً',
+      under_review: 'قيد المراجعة',
+      acknowledged: 'تم الاستلام',
+      prepared: 'مُجهّز',
+      withdrawn: 'مسحوب',
     },
     actions: {
       start_review: 'بدء المراجعة',
@@ -1998,8 +2137,11 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         resolved: { label: 'مكتمل', note: 'تم التحقق والإغلاق' },
       },
       search: {
-        overviewPlaceholder: 'ابحث برقم الحالة (مثل FR-2026-1038) أو اسم المنصة...',
-        casesPlaceholder: 'ابحث برقم الحالة أو العنوان أو المنصة...',
+        globalPlaceholder: 'ابحث في الحالات برقم الحالة أو العنوان أو الحالة...',
+        globalAriaLabel: 'بحث شامل في الحالات برقم الحالة أو العنوان أو الحالة',
+        viewMatchesBtn: (count) => `عرض (${count})`,
+        overviewPlaceholder: 'تصفية برقم الحالة أو العنوان أو الحالة (مثل FR-2026-1038)...',
+        casesPlaceholder: 'ابحث برقم الحالة أو العنوان أو الحالة...',
         activeOnly: 'المفتوحة فقط',
         allCases: 'كل الحالات',
         allStatuses: 'كل الحالات',
@@ -2742,6 +2884,79 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         notFoundBody: 'تأكد من صحة رمز التحقق في شهادة الـ PDF أو تواصل مع صاحب الحالة.',
         openLogin: 'فتح بوابة العملاء',
       },
+      caseActivityLog: {
+        title: 'سجل نشاط الحالات',
+        subtitle: 'تحديثات الحالة التاريخية والإجراءات الإدارية المتخذة',
+        filters: {
+          all: 'الكل',
+          status: 'تحديثات الحالة',
+          admin: 'إجراءات إدارية',
+        },
+        allCasesOption: 'جميع الحالات',
+        searchPlaceholder: 'ابحث في السجل أو المرجع',
+        sortNewest: 'الأحدث أولاً',
+        sortOldest: 'الأقدم أولاً',
+        summaryCounts: (total, statusUpdates, adminActions) =>
+          `${total} سجل · ${statusUpdates} حالة · ${adminActions} إجراء إداري`,
+        kinds: {
+          status_update: 'تحديث حالة',
+          admin_action: 'إجراء إداري',
+        },
+        actors: {
+          client: 'العميل',
+          staff: 'فريق الحالة',
+          platform: 'المنصة',
+          system: 'نظام المراقبة',
+        },
+        eventLabels: {
+          submitted: 'تم تقديم الحالة',
+          reviewing: 'بدء التحقيق والمراجعة',
+          needs_information: 'مطلوب معلومات إضافية',
+          approved: 'معتمد للإرسال',
+          submitted_to_platform: 'أُرسلت للمنصة',
+          action_taken: 'اتخذت المنصة إجراءً',
+          resolved: 'تمت الإزالة والحل',
+          rejected: 'مرفوضة',
+          disputed: 'إعادة فتح / فحص جديد',
+          closed: 'مغلقة',
+          watchlist_monitor: 'تحديث مراقبة الرابط',
+          platform_submission: 'تقديم بلاغ للمنصة',
+          platform_response: 'تسجيل رد المنصة',
+          verification_check: 'فحص مباشر للرابط',
+          watchlist_sweep: 'فحص مراقبة تلقائي',
+          staff_evidence: 'إثبات موثق من الفريق',
+          staff_message: 'تحديث من الفريق المختص',
+          evidence_added: 'أرشفة دليل',
+        },
+        empty: 'لا توجد سجلات نشاط مطابقة لهذا الفلتر.',
+        openCaseLabel: 'فتح الحالة',
+        visualStatuses: {
+          pending: 'قيد الانتظار',
+          in_progress: 'قيد التنفيذ',
+          resolved: 'تم الحل',
+          attention: 'يحتاج مراجعة',
+        },
+      },
+      evidenceDropZone: {
+        overviewTitle: 'إرفاق مستندات الأدلة الداعمة',
+        overviewSubtitle:
+          'اسحب وأفلت ملفات PDF أو JPEG أو PNG مباشرة إلى حالة نشطة. يتم تشفير الملفات بتقنية AES-256-GCM وتوثيقها ببصمة SHA-256.',
+        activeCaseLabel: 'الحالة النشطة',
+        categoryLabel: 'تصنيف الدليل',
+        titleLabel: 'عنوان المستند',
+        titlePlaceholder: 'مثال: لقطة شاشة للبلاغ أو مستند إثبات الملكية',
+        notesPlaceholder: 'ملاحظات اختيارية لمحلل الحالة',
+        noActiveCases: 'جميع الحالات مغلقة أو تم حلها حالياً.',
+        dropPrompt: 'اسحب وأفلت ملف PDF أو JPEG أو PNG هنا',
+        browseBtn: 'اختيار ملف',
+        acceptedFormatsHint: 'PDF أو JPEG أو PNG · الحد الأقصى 3 ميجابايت',
+        draggingHint: 'أفلت المستند لتجهيزه للرفع',
+        unsupportedTypeError: 'يُسمح فقط بملفات PDF و JPEG و PNG.',
+        fileTooLargeError: 'حجم الملف يتجاوز الحد الأقصى المسموح به (3 ميجابايت).',
+        attachBtn: 'إرفاق بالحالة النشطة',
+        attachingBtn: 'جارٍ التشفير والإرفاق...',
+        stagedReady: 'جاهز للرفع المشفّر',
+      },
     },
   },
 
@@ -2805,6 +3020,10 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       login_required: 'چوونەژوورەوە پێویستە',
       active: 'چالاک',
       suspended: 'ڕاگیراو',
+      under_review: 'لەژێر پێداچوونەوەدایە',
+      acknowledged: 'وەرگیراوە',
+      prepared: 'ئامادەکراو',
+      withdrawn: 'کێشراوەتەوە',
     },
     actions: {
       start_review: 'دەستپێکردنی پێداچوونەوە',
@@ -2963,8 +3182,11 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         resolved: { label: 'تەواوبوو', note: 'پشکنراو و داخراو' },
       },
       search: {
-        overviewPlaceholder: 'گەڕان بە ژمارەی کەیس (نموونە: FR-2026-1038) یان پلاتفۆرم...',
-        casesPlaceholder: 'گەڕان بە ژمارەی کەیس، ناونیشان، یان پلاتفۆرم...',
+        globalPlaceholder: 'گەڕان لە کەیسەکان بە کۆد، ناونیشان، یان دۆخ...',
+        globalAriaLabel: 'گەڕانی گشتی لە کەیسەکان بە کۆد، ناونیشان، یان دۆخ',
+        viewMatchesBtn: (count) => `بینین (${count})`,
+        overviewPlaceholder: 'فلتەرکردن بە کۆد، ناونیشان، یان دۆخ (نموونە: FR-2026-1038)...',
+        casesPlaceholder: 'گەڕان بە کۆد، ناونیشان، یان دۆخ...',
         activeOnly: 'تەنها کەیسە کراوەکان',
         allCases: 'هەموو کەیسەکان',
         allStatuses: 'هەموو دۆخەکان',
@@ -3706,6 +3928,79 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         notFoundTitle: 'هیچ تۆمارێکی هاوتا نەدۆزرایەوە',
         notFoundBody: 'دڵنیاببەوە لە کۆدی مۆرەکە لەسەر بڕوانامەی PDF یان پەیوەندی بە خاوەنی کەیسەکەوە بکە.',
         openLogin: 'کردنەوەی پانێڵی کڕیار',
+      },
+      caseActivityLog: {
+        title: 'تۆماری چالاکی کەیسەکان',
+        subtitle: 'نوێکارییەکانی دۆخ و ڕێکارە کارگێڕییەکان',
+        filters: {
+          all: 'هەموو',
+          status: 'نوێکاری دۆخ',
+          admin: 'ڕێکاری کارگێڕی',
+        },
+        allCasesOption: 'هەموو کەیسەکان',
+        searchPlaceholder: 'گەڕان لە تۆمار یان کۆد',
+        sortNewest: 'نوێترین سەرەتا',
+        sortOldest: 'کۆنترین سەرەتا',
+        summaryCounts: (total, statusUpdates, adminActions) =>
+          `${total} تۆمار · ${statusUpdates} دۆخ · ${adminActions} کارگێڕی`,
+        kinds: {
+          status_update: 'نوێکاری دۆخ',
+          admin_action: 'ڕێکاری کارگێڕی',
+        },
+        actors: {
+          client: 'کڕیار',
+          staff: 'تیمی کەیس',
+          platform: 'پلاتفۆرم',
+          system: 'چاودێری خۆکار',
+        },
+        eventLabels: {
+          submitted: 'کەیس نێردرا',
+          reviewing: 'لێکۆڵینەوە دەستیپێکرد',
+          needs_information: 'زانیاری زیاتر داواکرا',
+          approved: 'پەسەندکرا بۆ ناردن',
+          submitted_to_platform: 'نێردرا بۆ پلاتفۆرم',
+          action_taken: 'پلاتفۆرم هەنگاوی نا',
+          resolved: 'لابرا و چارەسەرکرا',
+          rejected: 'ڕەتکرایەوە',
+          disputed: 'دووبارە پشکنین کرایەوە',
+          closed: 'داخرا',
+          watchlist_monitor: 'چاودێری بەستەر نوێکرایەوە',
+          platform_submission: 'سکاڵا بۆ پلاتفۆرم نێردرا',
+          platform_response: 'وەڵامی پلاتفۆرم تۆمارکرا',
+          verification_check: 'پشکنینی ڕاستەوخۆی بەستەر',
+          watchlist_sweep: 'پشکنینی خۆکاری چاودێری',
+          staff_evidence: 'بەڵگەی پشتڕاستکراوی ستاف',
+          staff_message: 'ئاگاداری تیمی پسپۆڕ',
+          evidence_added: 'بەڵگە ئەرشیفکرا',
+        },
+        empty: 'هیچ تۆمارێکی چالاکی لەگەڵ ئەم فلتەرەدا ناگونجێت.',
+        openCaseLabel: 'کردنەوەی کەیس',
+        visualStatuses: {
+          pending: 'چاوەڕوانە',
+          in_progress: 'لە کارکردندایە',
+          resolved: 'چارەسەرکرا',
+          attention: 'پێداچوونەوە پێویستە',
+        },
+      },
+      evidenceDropZone: {
+        overviewTitle: 'هاوپێچکردنی بەڵگەنامە پاڵپشتەکان',
+        overviewSubtitle:
+          'فایلەکانی PDF یان JPEG یان PNG ڕابکێشە و لێرە دایبنێ بۆ کەیسێکی چالاک. فایلەکان بە AES-256-GCM کۆد دەکرێن و پەنجەمۆری SHA-256 وەردەگرن.',
+        activeCaseLabel: 'کەیسی چالاک',
+        categoryLabel: 'جۆری بەڵگە',
+        titleLabel: 'ناونیشانی بەڵگەنامە',
+        titlePlaceholder: 'نموونە: وێنەی سکرین یان بەڵگەنامەی خاوەندارێتی',
+        notesPlaceholder: 'تێبینی دڵخوازانە بۆ تیمی کەیس',
+        noActiveCases: 'هەموو کەیسەکان لە ئێستادا داخراون یان چارەسەرکراون.',
+        dropPrompt: 'فایلێکی PDF یان JPEG یان PNG ڕابکێشە و لێرە دایبنێ',
+        browseBtn: 'هەڵبژاردنی فایل',
+        acceptedFormatsHint: 'PDF یان JPEG یان PNG · زۆرترین قەبارە 3 MB',
+        draggingHint: 'فایلەکە دابنێ بۆ ئامادەکردنی بارکردن',
+        unsupportedTypeError: 'تەنها فایلەکانی PDF و JPEG و PNG پەسەندکراون.',
+        fileTooLargeError: 'قەبارەی فایلەکە لە سنووری 3 مێگابایت زیاترە.',
+        attachBtn: 'هاوپێچکردن بۆ کەیسی چالاک',
+        attachingBtn: 'کۆدکردن و هاوپێچکردن...',
+        stagedReady: 'ئامادەیە بۆ بارکردنی کۆدکراو',
       },
     },
   },

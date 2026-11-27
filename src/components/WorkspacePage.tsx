@@ -28,7 +28,6 @@ import {
   translateRole,
   translateSlaLabel,
   translateStatus,
-  translateTimelineLabel,
 } from '../data/portalTranslations';
 import type { LangCode } from '../data/translations';
 import { authFetch, clearAuthToken, getAuthToken } from '../lib/authClient';
@@ -44,14 +43,17 @@ import {
   computeCaseStats,
   computeWorkspaceAlertSummary,
   computeWorkspaceSummaryMetrics,
+  deriveDefaultEvidenceTitle,
   evaluateCaseReadiness,
   filterAndSortInvoices,
   filterWorkspaceCases,
   formatCurrencyUsd,
   formatFileSizeLabel,
   getPendingThresholdPreset,
+  isCaseActiveStatus,
   isCaseRemovedTransition,
   mergeWorkspaceToastAlerts,
+  pickDefaultActiveCaseForUpload,
   SERVICE_PACKAGES,
   type ComplaintType,
   type EvidenceCategory,
@@ -68,8 +70,13 @@ import {
   triggerBlobDownload,
 } from '../lib/caseReportPdf';
 import { BrandLogoMark } from './BrandLogoMark';
+import { CaseActivityLog } from './CaseActivityLog';
 import { CaseJourneyIndicator } from './CaseJourneyIndicator';
 import { CasePhaseTracker, type CustomerWsStatus } from './CasePhaseTracker';
+import {
+  EvidenceDropZone,
+  type StagedEvidenceUploadFile,
+} from './EvidenceDropZone';
 import { FilePreviewModal } from './FilePreviewModal';
 import { PortalLanguageSwitcher } from './PortalLanguageSwitcher';
 import {
@@ -229,7 +236,6 @@ export function WorkspacePage({
   }, [selectedCaseId]);
 
   // Evidence upload state inside modal
-  const evFileInputRef = useRef<HTMLInputElement | null>(null);
   const [evTitle, setEvTitle] = useState('');
   const [evCategory, setEvCategory] = useState<EvidenceCategory>('screenshot');
   const [evUrl, setEvUrl] = useState('');
@@ -238,7 +244,19 @@ export function WorkspacePage({
   const [evMimeType, setEvMimeType] = useState('');
   const [evFileSize, setEvFileSize] = useState(0);
   const [evNotes, setEvNotes] = useState('');
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [evDropError, setEvDropError] = useState<string | null>(null);
+  const [evModalBusy, setEvModalBusy] = useState(false);
+
+  // Overview active-case drag-and-drop upload state
+  const [overviewUploadCaseId, setOverviewUploadCaseId] = useState('');
+  const [overviewEvTitle, setOverviewEvTitle] = useState('');
+  const [overviewEvCategory, setOverviewEvCategory] = useState<EvidenceCategory>('screenshot');
+  const [overviewEvNotes, setOverviewEvNotes] = useState('');
+  const [overviewStagedFile, setOverviewStagedFile] = useState<StagedEvidenceUploadFile | null>(null);
+  const [overviewDropError, setOverviewDropError] = useState<string | null>(null);
+  const [overviewUploadBusy, setOverviewUploadBusy] = useState(false);
+
+  const [previewScope, setPreviewScope] = useState<'modal' | 'overview' | null>(null);
   const [printableReportCases, setPrintableReportCases] = useState<ProtectionCase[] | null>(null);
   const [quickJumpOpen, setQuickJumpOpen] = useState(false);
 
@@ -455,6 +473,23 @@ export function WorkspacePage({
     [data, selectedCaseId]
   );
 
+  const activeCasesForUpload = useMemo(
+    () => (data?.cases || []).filter((c) => isCaseActiveStatus(c.status)),
+    [data?.cases]
+  );
+
+  useEffect(() => {
+    if (!data?.cases) return;
+    if (
+      overviewUploadCaseId &&
+      activeCasesForUpload.some((c) => c.id === overviewUploadCaseId)
+    ) {
+      return;
+    }
+    const defaultActive = pickDefaultActiveCaseForUpload(data.cases);
+    setOverviewUploadCaseId(defaultActive?.id || '');
+  }, [activeCasesForUpload, data?.cases, overviewUploadCaseId]);
+
   const overviewCases = useMemo(
     () =>
       data
@@ -462,9 +497,10 @@ export function WorkspacePage({
             query: caseQuery,
             activeOnly: activeOnlyCases,
             sort: 'newest',
+            statusLabelResolver: (status) => translateStatus(status, lang),
           })
         : [],
-    [data, caseQuery, activeOnlyCases]
+    [data, caseQuery, activeOnlyCases, lang]
   );
 
   const visibleCases = useMemo(
@@ -474,9 +510,10 @@ export function WorkspacePage({
             query: caseQuery,
             activeOnly: activeOnlyCases,
             sort: caseSort,
+            statusLabelResolver: (status) => translateStatus(status, lang),
           })
         : [],
-    [data, caseQuery, activeOnlyCases, caseSort]
+    [data, caseQuery, activeOnlyCases, caseSort, lang]
   );
 
   const visibleInvoices = useMemo(
@@ -675,38 +712,33 @@ export function WorkspacePage({
     setEvMimeType('');
     setEvFileSize(0);
     setEvFile('');
-    setPreviewModalOpen(false);
-    if (evFileInputRef.current) {
-      evFileInputRef.current.value = '';
+    setEvDropError(null);
+    if (previewScope === 'modal') setPreviewScope(null);
+  };
+
+  const handleModalDropAccepted = (staged: StagedEvidenceUploadFile) => {
+    setEvBase64(staged.base64);
+    setEvMimeType(staged.mimeType);
+    setEvFileSize(staged.size);
+    setEvFile(staged.name);
+    setEvDropError(null);
+    if (!evTitle.trim()) {
+      setEvTitle(deriveDefaultEvidenceTitle(staged.name));
     }
   };
 
-  const handleEvidenceFilePick = (file: File | null) => {
-    if (!file) {
-      setEvBase64('');
-      setEvMimeType('');
-      setEvFileSize(0);
-      setPreviewModalOpen(false);
-      return;
+  const clearOverviewStagedFile = () => {
+    setOverviewStagedFile(null);
+    setOverviewDropError(null);
+    if (previewScope === 'overview') setPreviewScope(null);
+  };
+
+  const handleOverviewDropAccepted = (staged: StagedEvidenceUploadFile) => {
+    setOverviewStagedFile(staged);
+    setOverviewDropError(null);
+    if (!overviewEvTitle.trim()) {
+      setOverviewEvTitle(deriveDefaultEvidenceTitle(staged.name));
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setBanner({ kind: 'error', text: t.workspace.caseModal.attachFileLabel });
-      if (evFileInputRef.current) {
-        evFileInputRef.current.value = '';
-      }
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || '');
-      const base64 = result.includes(',') ? result.split(',')[1] : result;
-      setEvBase64(base64);
-      setEvMimeType(file.type || 'application/octet-stream');
-      setEvFileSize(file.size);
-      setEvFile(file.name);
-      if (!evTitle.trim()) setEvTitle(file.name.replace(/\.[^.]+$/, ''));
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleDownloadEvidence = async (
@@ -733,45 +765,96 @@ export function WorkspacePage({
   };
 
   const submitStagedEvidence = async () => {
-    if (!selectedCase) return;
+    if (!selectedCase || evModalBusy) return;
     if (!evTitle.trim()) {
       setBanner({ kind: 'error', text: t.workspace.caseModal.evTitlePlaceholder });
       return;
     }
-    const res = await authFetch(`/api/cases/${selectedCase.id}/evidence`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: evTitle,
-        category: evCategory,
-        reference_url: evUrl,
-        file_name: evFile,
-        file_content_base64: evBase64 || undefined,
-        mime_type: evMimeType || undefined,
-        notes: evNotes,
-      }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setBanner({ kind: 'error', text: json.error || t.workspace.loadError });
-      return;
+    setEvModalBusy(true);
+    try {
+      const res = await authFetch(`/api/cases/${selectedCase.id}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: evTitle,
+          category: evCategory,
+          reference_url: evUrl,
+          file_name: evFile,
+          file_content_base64: evBase64 || undefined,
+          mime_type: evMimeType || undefined,
+          notes: evNotes,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setBanner({ kind: 'error', text: json.error || t.workspace.loadError });
+        return;
+      }
+      setEvTitle('');
+      setEvUrl('');
+      setEvFile('');
+      setEvBase64('');
+      setEvMimeType('');
+      setEvFileSize(0);
+      setEvNotes('');
+      setEvDropError(null);
+      setPreviewScope(null);
+      setBanner({
+        kind: 'success',
+        text: t.workspace.caseModal.evidenceSaved(json.evidence.sha256_preview),
+      });
+      await loadWorkspace(true);
+    } catch {
+      setBanner({ kind: 'error', text: t.workspace.loadError });
+    } finally {
+      setEvModalBusy(false);
     }
-    setEvTitle('');
-    setEvUrl('');
-    setEvFile('');
-    setEvBase64('');
-    setEvMimeType('');
-    setEvFileSize(0);
-    setEvNotes('');
-    setPreviewModalOpen(false);
-    if (evFileInputRef.current) {
-      evFileInputRef.current.value = '';
+  };
+
+  const submitOverviewEvidence = async () => {
+    if (!overviewUploadCaseId || !overviewStagedFile || overviewUploadBusy) return;
+    const title = overviewEvTitle.trim() || deriveDefaultEvidenceTitle(overviewStagedFile.name);
+    setOverviewUploadBusy(true);
+    setOverviewDropError(null);
+    try {
+      const res = await authFetch(`/api/cases/${overviewUploadCaseId}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          category: overviewEvCategory,
+          file_name: overviewStagedFile.name,
+          file_content_base64: overviewStagedFile.base64,
+          mime_type: overviewStagedFile.mimeType,
+          notes: overviewEvNotes,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setOverviewDropError(json.error || t.workspace.loadError);
+        setBanner({ kind: 'error', text: json.error || t.workspace.loadError });
+        return;
+      }
+      setOverviewEvTitle('');
+      setOverviewEvNotes('');
+      setOverviewStagedFile(null);
+      setOverviewDropError(null);
+      setPreviewScope(null);
+      setBanner({
+        kind: 'success',
+        text: t.workspace.caseModal.evidenceSaved(json.evidence.sha256_preview),
+      });
+      await loadWorkspace(true);
+    } catch {
+      setBanner({ kind: 'error', text: t.workspace.loadError });
+    } finally {
+      setOverviewUploadBusy(false);
     }
-    setBanner({
-      kind: 'success',
-      text: t.workspace.caseModal.evidenceSaved(json.evidence.sha256_preview),
-    });
-    await loadWorkspace();
+  };
+
+  const handleOverviewEvidenceSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await submitOverviewEvidence();
   };
 
   const handleAddEvidence = async (e: FormEvent) => {
@@ -1095,8 +1178,8 @@ export function WorkspacePage({
 
       {/* Main Content */}
       <div className={`flex-1 min-w-0 flex flex-col ${printableReportCases ? 'no-print' : ''}`}>
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-[#DCE7F2] bg-white/95 px-4 sm:px-6 backdrop-blur-md no-print">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2.5 border-b border-[#DCE7F2] bg-white/95 px-4 sm:px-6 py-2 md:py-0 md:h-14 backdrop-blur-md no-print">
+          <div className="order-1 flex min-w-0 items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -1114,7 +1197,63 @@ export function WorkspacePage({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <form
+            data-testid="workspace-global-search-form"
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (tab !== 'overview' && tab !== 'cases') {
+                setTab('cases');
+              }
+            }}
+            className="order-3 w-full md:order-2 md:w-auto md:flex-1 md:max-w-sm lg:max-w-md min-w-0 relative flex items-center"
+          >
+            <Search className="pointer-events-none absolute start-3 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              inputMode="search"
+              data-testid="workspace-global-search-input"
+              aria-label={t.workspace.search.globalAriaLabel}
+              value={caseQuery}
+              onChange={(e) => setCaseQuery(e.target.value)}
+              placeholder={t.workspace.search.globalPlaceholder}
+              className="w-full h-9 rounded-lg border border-[#DCE7F2] bg-[#F7FAFC] ps-8.5 pe-24 text-xs text-[#041E4A] placeholder-slate-400 outline-none focus:border-[#0057B8] focus:bg-white transition"
+            />
+            {(caseQuery.trim() || caseQuery.length > 0) && (
+              <div className="absolute end-1.5 flex items-center gap-1">
+                {data && caseQuery.trim() && (
+                  tab !== 'overview' && tab !== 'cases' ? (
+                    <button
+                      type="button"
+                      data-testid="workspace-global-search-view-btn"
+                      onClick={() => setTab('cases')}
+                      className="rounded border border-[#0057B8]/25 bg-[#EFF7FC] px-1.5 py-0.5 text-[10px] font-semibold text-[#0057B8] hover:bg-[#DCEEFB] cursor-pointer whitespace-nowrap"
+                    >
+                      {t.workspace.search.viewMatchesBtn(visibleCases.length)}
+                    </button>
+                  ) : (
+                    <span
+                      data-testid="workspace-global-search-count"
+                      className="font-mono text-[10px] tabular-nums text-slate-500 px-1"
+                    >
+                      {visibleCases.length}/{data.cases.length}
+                    </span>
+                  )
+                )}
+                <button
+                  type="button"
+                  data-testid="workspace-global-search-clear"
+                  aria-label={t.common.clear}
+                  onClick={() => setCaseQuery('')}
+                  className="rounded p-1 text-slate-400 hover:text-slate-900 cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </form>
+
+          <div className="order-2 md:order-3 flex items-center gap-2 shrink-0">
             <button
               type="button"
               data-testid="workspace-quick-jump-btn"
@@ -1123,7 +1262,7 @@ export function WorkspacePage({
               title={`${t.enhancements.quickJump.buttonLabel} (Ctrl+K)`}
             >
               <Search className="h-3.5 w-3.5 text-[#0057B8]" />
-              <span className="hidden md:inline">{t.enhancements.quickJump.buttonLabel}</span>
+              <span className="hidden lg:inline">{t.enhancements.quickJump.buttonLabel}</span>
               <kbd
                 dir="ltr"
                 className="hidden sm:inline rounded border border-[#DCE7F2] bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-500"
@@ -1340,7 +1479,8 @@ export function WorkspacePage({
                       <div className="relative flex-1 min-w-0">
                         <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                         <input
-                          type="search"
+                          type="text"
+                          inputMode="search"
                           data-testid="overview-case-search"
                           aria-label={t.workspace.search.overviewPlaceholder}
                           value={caseQuery}
@@ -1499,40 +1639,144 @@ export function WorkspacePage({
                         </div>
                       </section>
 
-                      <section className="min-w-0 rounded-2xl border border-[#DCE7F2] bg-white p-5 lg:col-span-5 shadow-xs">
-                        <div className="flex items-center justify-between border-b border-[#EFF5FA] pb-3.5">
-                          <h2 className="font-display text-sm font-bold text-[#041E4A]">
-                            {t.workspace.overview.recentUpdatesTitle}
-                          </h2>
-                        </div>
-                        <div className="mt-3 space-y-3">
-                          {data.recentActivity.length === 0 ? (
-                            <p className="text-xs text-slate-500">
-                              {t.workspace.overview.noActivityYet}
-                            </p>
-                          ) : (
-                            data.recentActivity.slice(0, 5).map((act) => (
-                              <div
-                                key={act.id}
-                                className="border-b border-[#EFF5FA] pb-3 last:border-b-0 last:pb-0"
-                              >
-                                <div className="flex items-center justify-between font-mono text-[11px]">
-                                  <span className="font-semibold text-[#0057B8]" dir="ltr">
-                                    {act.case_number}
-                                  </span>
-                                  <span className="text-slate-400 tabular-nums" dir="ltr">
-                                    {act.created_at.slice(0, 10)}
-                                  </span>
-                                </div>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                                  {act.message}
-                                </p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </section>
+                      <div className="min-w-0 lg:col-span-5">
+                        <CaseActivityLog
+                          lang={lang}
+                          mode="workspace"
+                          cases={overviewCases}
+                          onSelectCase={(caseId) => {
+                            setSelectedCaseId(caseId);
+                            setCaseModalSection('timeline');
+                          }}
+                        />
+                      </div>
                     </div>
+
+                    {/* Overview Quick Supporting Evidence Upload Drop Zone */}
+                    <section
+                      aria-label={t.enhancements.evidenceDropZone.overviewTitle}
+                      data-testid="workspace-evidence-upload-card"
+                      className="min-w-0 rounded-2xl border border-[#DCE7F2] bg-white p-5 sm:p-6 shadow-xs space-y-4"
+                    >
+                      <div className="border-b border-[#EFF5FA] pb-3.5">
+                        <h2 className="font-display text-sm font-bold text-[#041E4A]">
+                          {t.enhancements.evidenceDropZone.overviewTitle}
+                        </h2>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {t.enhancements.evidenceDropZone.overviewSubtitle}
+                        </p>
+                      </div>
+
+                      {activeCasesForUpload.length === 0 ? (
+                        <div className="rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-xs text-slate-600">
+                          {t.enhancements.evidenceDropZone.noActiveCases}
+                        </div>
+                      ) : (
+                        <form onSubmit={handleOverviewEvidenceSubmit} className="space-y-4">
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div>
+                              <label
+                                htmlFor="overview-upload-case"
+                                className="block text-[11px] font-semibold text-slate-600 mb-1"
+                              >
+                                {t.enhancements.evidenceDropZone.activeCaseLabel}
+                              </label>
+                              <select
+                                id="overview-upload-case"
+                                data-testid="workspace-upload-case-select"
+                                value={overviewUploadCaseId}
+                                onChange={(e) => setOverviewUploadCaseId(e.target.value)}
+                                className="w-full rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-3 py-2 text-xs text-[#041E4A] outline-none focus:border-[#0057B8] focus:bg-white"
+                              >
+                                {activeCasesForUpload.map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    {c.case_number} · {c.platform} — {c.title}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="overview-upload-category"
+                                className="block text-[11px] font-semibold text-slate-600 mb-1"
+                              >
+                                {t.enhancements.evidenceDropZone.categoryLabel}
+                              </label>
+                              <select
+                                id="overview-upload-category"
+                                data-testid="workspace-upload-category-select"
+                                value={overviewEvCategory}
+                                onChange={(e) =>
+                                  setOverviewEvCategory(e.target.value as EvidenceCategory)
+                                }
+                                className="w-full rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-3 py-2 text-xs text-[#041E4A] outline-none focus:border-[#0057B8] focus:bg-white"
+                              >
+                                {Object.entries(t.workspace.caseModal.evCategories).map(
+                                  ([val, label]) => (
+                                    <option key={val} value={val}>
+                                      {label}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="overview-upload-title"
+                                className="block text-[11px] font-semibold text-slate-600 mb-1"
+                              >
+                                {t.enhancements.evidenceDropZone.titleLabel}
+                              </label>
+                              <input
+                                id="overview-upload-title"
+                                data-testid="workspace-upload-title-input"
+                                type="text"
+                                value={overviewEvTitle}
+                                onChange={(e) => setOverviewEvTitle(e.target.value)}
+                                placeholder={t.enhancements.evidenceDropZone.titlePlaceholder}
+                                className="w-full rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-3 py-2 text-xs text-[#041E4A] outline-none focus:border-[#0057B8] focus:bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          <EvidenceDropZone
+                            lang={lang}
+                            testId="workspace-evidence-dropzone"
+                            stagedFile={overviewStagedFile}
+                            errorText={overviewDropError}
+                            disabled={overviewUploadBusy}
+                            onFileAccepted={handleOverviewDropAccepted}
+                            onError={(msg) => setOverviewDropError(msg)}
+                            onClear={clearOverviewStagedFile}
+                            onPreview={() => setPreviewScope('overview')}
+                          />
+
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <input
+                              type="text"
+                              data-testid="workspace-upload-notes-input"
+                              value={overviewEvNotes}
+                              onChange={(e) => setOverviewEvNotes(e.target.value)}
+                              placeholder={t.enhancements.evidenceDropZone.notesPlaceholder}
+                              className="flex-1 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-3.5 py-2 text-xs text-[#041E4A] outline-none focus:border-[#0057B8] focus:bg-white"
+                            />
+                            <button
+                              type="submit"
+                              data-testid="workspace-evidence-submit-btn"
+                              disabled={!overviewStagedFile || !overviewUploadCaseId || overviewUploadBusy}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0057B8] px-4 py-2 text-xs font-semibold text-white hover:bg-[#004494] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                            >
+                              <FileCheck2 className="h-3.5 w-3.5" />
+                              <span>
+                                {overviewUploadBusy
+                                  ? t.enhancements.evidenceDropZone.attachingBtn
+                                  : t.enhancements.evidenceDropZone.attachBtn}
+                              </span>
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </section>
                   </div>
                 )}
 
@@ -1542,8 +1786,10 @@ export function WorkspacePage({
                       <div className="relative w-full sm:w-96">
                         <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                         <input
-                          type="search"
+                          type="text"
+                          inputMode="search"
                           data-testid="cases-tab-search"
+                          aria-label={t.workspace.search.casesPlaceholder}
                           value={caseQuery}
                           onChange={(e) => setCaseQuery(e.target.value)}
                           placeholder={t.workspace.search.casesPlaceholder}
@@ -2653,75 +2899,7 @@ export function WorkspacePage({
             {caseModalSection === 'timeline' && (
               <div className="mt-4 space-y-5">
                 <p className="text-xs leading-relaxed text-slate-600">{selectedCase.description}</p>
-                <div>
-                  <div className="text-xs font-semibold text-slate-700">
-                    {t.workspace.caseModal.timelineTitle}
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {selectedCase.activity.map((act) => (
-                      <div key={act.id} className="rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] p-3.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-[#0057B8]">
-                            {translateTimelineLabel(act.activity_type, act.activity_type, lang)}
-                          </span>
-                          <span className="font-mono text-[11px] text-slate-500" dir="ltr">
-                            {act.created_at.slice(0, 10)}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-700">{act.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedCase.submissions.length > 0 && (
-                  <div>
-                    <div className="text-xs font-semibold text-slate-700">
-                      {t.workspace.caseModal.submissionsTitle}
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      {selectedCase.submissions.map((s) => (
-                        <div key={s.id} className="rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] p-3.5 text-xs">
-                          <div className="flex justify-between gap-2">
-                            <span className="font-semibold text-[#041E4A]">
-                              {s.platform} ·{' '}
-                              <span className="font-mono" dir="ltr">
-                                {s.external_reference || translateStatus('submitted', lang)}
-                              </span>
-                            </span>
-                            <span className={`font-semibold ${statusTextTone(s.status)}`}>
-                              {translateStatus(s.status, lang)}
-                            </span>
-                          </div>
-                          {s.response_summary && (
-                            <p className="mt-1 text-slate-600">{s.response_summary}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedCase.verifications.length > 0 && (
-                  <div>
-                    <div className="text-xs font-semibold text-slate-700">
-                      {t.workspace.caseModal.verificationsTitle}
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      {selectedCase.verifications.map((v) => (
-                        <div
-                          key={v.id}
-                          className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs"
-                        >
-                          <div className="font-semibold text-emerald-800">
-                            {translateStatus(v.result, lang)}
-                          </div>
-                          {v.notes && <p className="mt-1 text-slate-700">{v.notes}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <CaseActivityLog lang={lang} mode="case" caseItem={selectedCase} />
 
                 {canCustomerRequestRecheck(selectedCase.status) && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 space-y-3">
@@ -2821,49 +2999,34 @@ export function WorkspacePage({
                       ))}
                     </select>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-3">
                     <div>
                       <label className="block text-xs text-slate-600 mb-1.5">
                         {t.workspace.caseModal.attachFileLabel}
                       </label>
-                      <input
-                        ref={evFileInputRef}
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.webp,.pdf,.txt,.csv,.json"
-                        onChange={(e) => handleEvidenceFilePick(e.target.files?.[0] || null)}
-                        className="w-full rounded-xl border border-[#DCE7F2] bg-white px-2.5 py-1.5 text-xs text-slate-600 file:me-2 file:rounded-lg file:border-0 file:bg-[#0057B8] file:px-2.5 file:py-1 file:text-[11px] file:font-semibold file:text-white cursor-pointer"
+                      <EvidenceDropZone
+                        lang={lang}
+                        testId="case-modal-evidence-dropzone"
+                        stagedFile={
+                          evBase64
+                            ? {
+                                name: evFile || 'evidence',
+                                size: evFileSize,
+                                base64: evBase64,
+                                mimeType: evMimeType || 'application/octet-stream',
+                                kind: evMimeType === 'application/pdf' ? 'pdf' : 'image',
+                              }
+                            : null
+                        }
+                        errorText={evDropError}
+                        disabled={evModalBusy}
+                        onFileAccepted={handleModalDropAccepted}
+                        onError={(msg) => setEvDropError(msg)}
+                        onClear={clearStagedEvidenceFile}
+                        onPreview={() => setPreviewScope('modal')}
                       />
-                      {evBase64 && (
-                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
-                          <span className="truncate font-medium text-emerald-800">
-                            {t.workspace.caseModal.stagedLabel(
-                              evFile,
-                              formatFileSizeLabel(evFileSize)
-                            )}
-                          </span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              data-testid="preview-staged-evidence-btn"
-                              onClick={() => setPreviewModalOpen(true)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-[#0057B8]/25 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0057B8] hover:bg-[#EFF7FC] cursor-pointer"
-                            >
-                              <Eye className="h-3 w-3" />
-                              <span>{t.workspace.caseModal.previewFile}</span>
-                            </button>
-                            <button
-                              type="button"
-                              data-testid="clear-staged-evidence-btn"
-                              onClick={clearStagedEvidenceFile}
-                              className="text-xs text-slate-500 hover:text-rose-700 cursor-pointer"
-                            >
-                              {t.common.clear}
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <input
                         type="text"
                         value={evFile}
@@ -2890,9 +3053,13 @@ export function WorkspacePage({
                   />
                   <button
                     type="submit"
-                    className="rounded-lg bg-[#0057B8] px-4 py-2 text-xs font-semibold text-white hover:bg-[#004494] cursor-pointer"
+                    disabled={evModalBusy}
+                    data-testid="case-modal-save-evidence-btn"
+                    className="rounded-lg bg-[#0057B8] px-4 py-2 text-xs font-semibold text-white hover:bg-[#004494] disabled:opacity-50 cursor-pointer"
                   >
-                    {t.workspace.caseModal.saveEvidenceBtn}
+                    {evModalBusy
+                      ? t.enhancements.evidenceDropZone.attachingBtn
+                      : t.workspace.caseModal.saveEvidenceBtn}
                   </button>
                 </form>
 
@@ -3101,23 +3268,47 @@ export function WorkspacePage({
 
       <FilePreviewModal
         lang={lang}
-        isOpen={previewModalOpen && Boolean(evBase64)}
-        file={
-          evBase64
-            ? {
-                fileName: evFile || 'staged-evidence',
-                mimeType: evMimeType || 'application/octet-stream',
-                fileSizeBytes: evFileSize,
-                base64Content: evBase64,
-                title: evTitle,
-                category: evCategory,
-              }
-            : null
+        isOpen={
+          (previewScope === 'modal' && Boolean(evBase64)) ||
+          (previewScope === 'overview' && Boolean(overviewStagedFile))
         }
-        onClose={() => setPreviewModalOpen(false)}
-        onRemoveFile={clearStagedEvidenceFile}
-        canSubmitDirectly={Boolean(selectedCase && evTitle.trim())}
-        onConfirmSubmit={submitStagedEvidence}
+        file={
+          previewScope === 'overview' && overviewStagedFile
+            ? {
+                fileName: overviewStagedFile.name,
+                mimeType: overviewStagedFile.mimeType,
+                fileSizeBytes: overviewStagedFile.size,
+                base64Content: overviewStagedFile.base64,
+                title: overviewEvTitle || deriveDefaultEvidenceTitle(overviewStagedFile.name),
+                category: overviewEvCategory,
+              }
+            : evBase64
+              ? {
+                  fileName: evFile || 'staged-evidence',
+                  mimeType: evMimeType || 'application/octet-stream',
+                  fileSizeBytes: evFileSize,
+                  base64Content: evBase64,
+                  title: evTitle,
+                  category: evCategory,
+                }
+              : null
+        }
+        onClose={() => setPreviewScope(null)}
+        onRemoveFile={() => {
+          if (previewScope === 'overview') {
+            clearOverviewStagedFile();
+          } else {
+            clearStagedEvidenceFile();
+          }
+        }}
+        canSubmitDirectly={
+          previewScope === 'overview'
+            ? Boolean(overviewUploadCaseId && overviewStagedFile)
+            : Boolean(selectedCase && evTitle.trim())
+        }
+        onConfirmSubmit={
+          previewScope === 'overview' ? submitOverviewEvidence : submitStagedEvidence
+        }
       />
 
       <QuickJumpModal

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyCaseTransition,
+  buildCaseActivityLogEntries,
   buildCaseChronologicalLog,
   buildCaseEvidencePrintReport,
   buildCaseHistoryCsv,
@@ -11,6 +12,7 @@ import {
   buildReportExportFilename,
   buildSingleCaseCertificateData,
   buildStaffQueueCsv,
+  buildWorkspaceCaseActivityLog,
   canCustomerRequestRecheck,
   CASE_SCENARIO_TEMPLATES,
   classifyAuditCategory,
@@ -30,10 +32,12 @@ import {
   computeWorkspaceSummaryMetrics,
   decodeBase64ToUtf8Preview,
   DEFAULT_PENDING_THRESHOLDS,
+  deriveDefaultEvidenceTitle,
   evaluateCaseReadiness,
   filterActivityEvents,
   filterAndSortCases,
   filterAndSortInvoices,
+  filterCaseActivityLogEntries,
   filterStaffCasesQueue,
   filterWorkspaceCases,
   formatCurrencyUsd,
@@ -51,9 +55,13 @@ import {
   isReappearedSweepFinding,
   mergeActivityEventsIdempotent,
   mergeWorkspaceToastAlerts,
+  pickDefaultActiveCaseForUpload,
+  resolveCaseActivityVisualStatus,
   SERVICE_PACKAGES,
+  summarizeCaseActivityLog,
   summarizeWatchlistSweep,
   validateCaseInput,
+  validateEvidenceUploadFile,
   validateInquiryInput,
   validateRecheckRequestInput,
   type AuditEventRecord,
@@ -1162,5 +1170,265 @@ test('buildCaseEvidencePrintReport compiles single-case and workspace forensic e
   assert.equal(dossier.totalEvidenceItems, 2);
 });
 
+test('buildCaseActivityLogEntries & buildWorkspaceCaseActivityLog track status updates and admin actions cleanly', () => {
+  const richCase: ProtectionCase = {
+    ...sampleCases[0],
+    evidence: [
+      {
+        id: 'ev-staff-1',
+        title: 'Trademark registration verification',
+        category: 'ownership_proof',
+        file_name: 'trademark-cert.pdf',
+        sha256_preview: 'aa11bb22cc33dd44',
+        uploaded_by_role: 'staff',
+        uploaded_by_email: 'ops@fremove.com',
+        notes: 'Confirmed matching registrant.',
+        created_at: '2026-11-10T11:00:00.000Z',
+      },
+      {
+        id: 'ev-client-1',
+        title: 'Client screenshot',
+        category: 'screenshot',
+        uploaded_by_role: 'customer',
+        uploaded_by_email: 'sara@example.com',
+        created_at: '2026-11-10T10:05:00.000Z',
+      },
+    ],
+    activity: [
+      {
+        id: 'act-1',
+        activity_type: 'submitted',
+        message: 'Case opened by client.',
+        visibility: 'customer',
+        created_at: '2026-11-10T10:00:00.000Z',
+      },
+      {
+        id: 'act-staff-only',
+        activity_type: 'internal_note',
+        message: 'Confidential analyst triage memo.',
+        visibility: 'staff',
+        created_at: '2026-11-10T10:30:00.000Z',
+      },
+      {
+        id: 'act-2',
+        activity_type: 'reviewing',
+        message: 'Investigation started by specialist team.',
+        visibility: 'customer',
+        created_at: '2026-11-10T12:00:00.000Z',
+      },
+      {
+        id: 'act-3',
+        activity_type: 'watchlist_monitor',
+        message: 'Automated URL watchlist monitoring enabled.',
+        visibility: 'customer',
+        created_at: '2026-11-10T13:00:00.000Z',
+      },
+    ],
+    submissions: [
+      {
+        id: 'sub-1',
+        platform: 'Instagram',
+        submission_channel: 'platform_portal',
+        status: 'under_review',
+        external_reference: 'IG-99201',
+        response_summary: 'Acknowledged by Meta Rights queue.',
+        submitted_at: '2026-11-10T14:00:00.000Z',
+      },
+    ],
+    verifications: [
+      {
+        id: 'ver-1',
+        result: 'confirmed_removed',
+        checked_url: 'https://instagram.com/fake_studio_account',
+        notes: '[Watchlist sweep] HTTP 404 Not Found',
+        checked_at: '2026-11-10T15:00:00.000Z',
+      },
+    ],
+    messages: [
+      {
+        id: 'msg-staff-1',
+        sender_role: 'staff',
+        sender_email: 'ops@fremove.com',
+        message: 'Filing submitted; tracking removal.',
+        created_at: '2026-11-10T14:15:00.000Z',
+      },
+      {
+        id: 'msg-client-1',
+        sender_role: 'customer',
+        sender_email: 'sara@example.com',
+        message: 'Thank you!',
+        created_at: '2026-11-10T14:30:00.000Z',
+      },
+    ],
+  };
 
+  const entries = buildCaseActivityLogEntries(richCase);
+  assert.equal(entries.some((e) => e.description.includes('Confidential analyst triage memo')), false);
+  assert.equal(entries.some((e) => e.description === 'Thank you!'), false);
 
+  const summary = summarizeCaseActivityLog(entries);
+  assert.equal(summary.statusUpdates, 2); // submitted, reviewing
+  assert.equal(summary.adminActions, 5); // staff_evidence, watchlist_monitor, platform_response, staff_message, watchlist_sweep
+  assert.equal(summary.total, 7);
+
+  // Default newest-first ordering puts watchlist_sweep (15:00) first
+  assert.equal(entries[0].eventType, 'watchlist_sweep');
+  assert.equal(entries[0].actorRole, 'system');
+
+  // Ascending order puts submitted (10:00) first
+  const ascEntries = filterCaseActivityLogEntries(entries, { order: 'asc' });
+  assert.equal(ascEntries[0].eventType, 'submitted');
+  assert.equal(ascEntries[0].kind, 'status_update');
+
+  // Filter by kind and query across workspace
+  const workspaceLog = buildWorkspaceCaseActivityLog([richCase, sampleCases[1]], {
+    kind: 'admin_action',
+    query: 'IG-99201',
+  });
+  assert.equal(workspaceLog.length, 1);
+  assert.equal(workspaceLog[0].eventType, 'platform_response');
+  assert.equal(workspaceLog[0].caseNumber, richCase.case_number);
+
+  const statusOnly = buildWorkspaceCaseActivityLog([richCase, sampleCases[1]], {
+    caseId: richCase.id,
+    kind: 'status_update',
+  });
+  assert.equal(statusOnly.length, 2);
+
+  // Visual status chip classification checks
+  assert.equal(resolveCaseActivityVisualStatus(ascEntries[0]), 'pending'); // submitted
+  assert.equal(
+    resolveCaseActivityVisualStatus(entries.find((e) => e.eventType === 'reviewing')!),
+    'in_progress'
+  );
+  assert.equal(
+    resolveCaseActivityVisualStatus(entries.find((e) => e.eventType === 'platform_response')!),
+    'in_progress'
+  );
+  assert.equal(
+    resolveCaseActivityVisualStatus(entries.find((e) => e.eventType === 'watchlist_sweep')!),
+    'resolved'
+  );
+  assert.equal(
+    resolveCaseActivityVisualStatus({
+      eventType: 'rejected',
+      statusTag: 'rejected',
+      description: 'Case closed without approval.',
+    }),
+    'attention'
+  );
+});
+
+test('validateEvidenceUploadFile, deriveDefaultEvidenceTitle, and pickDefaultActiveCaseForUpload validate PDFs/JPEGs/PNGs and select active cases', () => {
+  const pdfOk = validateEvidenceUploadFile({
+    name: 'ownership-cert.PDF',
+    type: 'application/pdf',
+    size: 256_000,
+  });
+  assert.deepEqual(pdfOk, {
+    ok: true,
+    kind: 'pdf',
+    normalizedMime: 'application/pdf',
+    extension: 'pdf',
+  });
+
+  const jpegOk = validateEvidenceUploadFile({
+    name: 'capture.jpeg',
+    type: '',
+    size: 120_000,
+  });
+  assert.deepEqual(jpegOk, {
+    ok: true,
+    kind: 'image',
+    normalizedMime: 'image/jpeg',
+    extension: 'jpeg',
+  });
+
+  const pngOk = validateEvidenceUploadFile({
+    name: 'proof.png',
+    type: 'image/png',
+    size: 512_000,
+  });
+  assert.deepEqual(pngOk, {
+    ok: true,
+    kind: 'image',
+    normalizedMime: 'image/png',
+    extension: 'png',
+  });
+
+  assert.deepEqual(
+    validateEvidenceUploadFile({ name: 'script.exe', type: 'application/x-msdownload', size: 1000 }),
+    { ok: false, reason: 'unsupported_type' }
+  );
+
+  assert.deepEqual(
+    validateEvidenceUploadFile({ name: 'huge.png', type: 'image/png', size: 4 * 1024 * 1024 }),
+    { ok: false, reason: 'file_too_large' }
+  );
+
+  assert.equal(deriveDefaultEvidenceTitle('trademark_proof.pdf'), 'trademark_proof');
+  assert.equal(deriveDefaultEvidenceTitle(''), 'Supporting evidence');
+
+  const picked = pickDefaultActiveCaseForUpload(sampleCases);
+  assert.ok(picked);
+  assert.equal(picked.id, sampleCases[0].id);
+
+  assert.equal(pickDefaultActiveCaseForUpload([sampleCases[2]]), null);
+});
+
+test('filterWorkspaceCases searches by case ID, title, raw status, and resolved status label', () => {
+  const resolver = (status: string) =>
+    ({
+      reviewing: 'In review',
+      needs_information: 'Needs your reply',
+      resolved: 'Done',
+    })[status] || status;
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'FR-2026-1038',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-2']
+  );
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'Cloned e-commerce',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-2']
+  );
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'Needs your reply',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-2']
+  );
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'needs information',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-2']
+  );
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'In review',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-1']
+  );
+
+  assert.deepEqual(
+    filterWorkspaceCases(sampleCases, {
+      query: 'Done',
+      statusLabelResolver: resolver,
+    }).map((c) => c.id),
+    ['case-3']
+  );
+});

@@ -39,7 +39,13 @@
     "7329ce6da0ef22cd85ddbe7eb215163b7ad7d502a5af00f9": "ops@fremove.com",
     "df26b7b7d06a372e982cae6b0799feaad1a48ae84902db65": "sara@example.com",
     "972663955958ada44528f09c23a57d0606631078df5da76b": "sara@example.com",
-    "f878f736829b6c62a95fca0998537dbbf2dc4a1a678d0cfe": "sara@example.com"
+    "f878f736829b6c62a95fca0998537dbbf2dc4a1a678d0cfe": "sara@example.com",
+    "fad3d5c7525da0bb5dad2b5b5d105f78cadf3f72303e29d4": "sara@example.com",
+    "90614a587e7cdce0b8ed5da597eb413f3e73ceaad86640ea": "sara@example.com",
+    "4d6edbe9a0e99b203442244714bed3ac7f56efce9c3ebb1a": "sara@example.com",
+    "7ce2bb017c71ff826107950a5382a58d49c44f41c804d65e": "sara@example.com",
+    "a9ad1e9983da9d8c055da7c30e4ee25d6a12d3aa75d6e6f7": "sara@example.com",
+    "3ab36f29fb1d63dab18a63d6791d87faa2da3774d7ba22ee": "sara@example.com"
   },
   "authCodes": {
     "fullremove2026@gmail.com": {
@@ -529,6 +535,78 @@
     }
   ],
   "auditLog": [
+    {
+      "id": "aud-567fb25b",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T09:07:07.832Z"
+    },
+    {
+      "id": "aud-e1a465a8",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T09:05:50.099Z"
+    },
+    {
+      "id": "aud-32de1137",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:56:09.165Z"
+    },
+    {
+      "id": "aud-877e6e61",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:55:16.398Z"
+    },
+    {
+      "id": "aud-12f9a2d6",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:52:35.632Z"
+    },
+    {
+      "id": "aud-47d5423f",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:51:17.599Z"
+    },
     {
       "id": "aud-589f9125",
       "actor": "sara@example.com",
