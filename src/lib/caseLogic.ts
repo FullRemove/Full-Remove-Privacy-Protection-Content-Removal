@@ -1978,6 +1978,27 @@ export interface WorkspaceAlertSummary {
   resolvedCount: number;
 }
 
+function isCaseMarkedRemoved(caseItem: ProtectionCase): boolean {
+  if (caseItem.status === 'resolved') return true;
+  const verifications = caseItem.verifications;
+  if (!verifications || verifications.length === 0) return false;
+  let latest = verifications[verifications.length - 1];
+  for (const v of verifications) {
+    if (v.checked_at && latest?.checked_at && v.checked_at > latest.checked_at) {
+      latest = v;
+    }
+  }
+  return latest?.result === 'confirmed_removed';
+}
+
+export function isCaseRemovedTransition(
+  prevCase: ProtectionCase | undefined,
+  nextCase: ProtectionCase
+): boolean {
+  if (!prevCase) return false;
+  return !isCaseMarkedRemoved(prevCase) && isCaseMarkedRemoved(nextCase);
+}
+
 export function classifyCaseTransitionAlert(
   prevCase: ProtectionCase | undefined,
   nextCase: ProtectionCase,
@@ -1990,7 +2011,10 @@ export function classifyCaseTransitionAlert(
 
   const timestamp = nextCase.updated_at || new Date(nowMs).toISOString();
 
-  if (nextCase.status === 'resolved' && prevCase.status !== 'resolved') {
+  if (
+    (nextCase.status === 'resolved' && prevCase.status !== 'resolved') ||
+    isCaseRemovedTransition(prevCase, nextCase)
+  ) {
     return {
       id: `alert-${nextCase.id}-resolved-${timestamp}`,
       dedupeKey: `${nextCase.id}:resolved:${timestamp}`,
@@ -2459,6 +2483,79 @@ export function buildSingleCaseCertificateData(c: ProtectionCase): SingleCaseCer
       sha256: ev.sha256_preview || 'unhashed',
       createdAt: ev.created_at,
     })),
+  };
+}
+
+export interface CaseEvidencePrintEntry {
+  id: string;
+  title: string;
+  category: EvidenceCategory;
+  fileName: string;
+  referenceUrl: string;
+  sha256: string;
+  encryptedVault: boolean;
+  uploadedByRole: 'customer' | 'staff';
+  uploadedByEmail: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface CaseEvidencePrintSection {
+  certificate: SingleCaseCertificateData;
+  description: string;
+  evidenceItems: CaseEvidencePrintEntry[];
+}
+
+export interface CaseEvidencePrintReport {
+  generatedAt: string;
+  accountName: string;
+  accountEmail: string;
+  isMultiCase: boolean;
+  totalCases: number;
+  totalEvidenceItems: number;
+  encryptedEvidenceCount: number;
+  sections: CaseEvidencePrintSection[];
+}
+
+export function buildCaseEvidencePrintReport(
+  cases: ProtectionCase[],
+  user?: { name?: string; email?: string },
+  nowMs: number = Date.now()
+): CaseEvidencePrintReport {
+  const safeCases = Array.isArray(cases) ? cases : [];
+  const sections: CaseEvidencePrintSection[] = safeCases.map((c) => ({
+    certificate: buildSingleCaseCertificateData(c),
+    description: c.description || '',
+    evidenceItems: (c.evidence || []).map((ev) => ({
+      id: ev.id,
+      title: ev.title,
+      category: ev.category,
+      fileName: ev.file_name || '',
+      referenceUrl: ev.reference_url || '',
+      sha256: ev.sha256_preview || 'unhashed',
+      encryptedVault: Boolean(ev.has_encrypted_file),
+      uploadedByRole: ev.uploaded_by_role,
+      uploadedByEmail: ev.uploaded_by_email,
+      notes: ev.notes || '',
+      createdAt: ev.created_at,
+    })),
+  }));
+
+  const totalEvidenceItems = sections.reduce((sum, sec) => sum + sec.evidenceItems.length, 0);
+  const encryptedEvidenceCount = sections.reduce(
+    (sum, sec) => sum + sec.evidenceItems.filter((item) => item.encryptedVault).length,
+    0
+  );
+
+  return {
+    generatedAt: new Date(nowMs).toISOString(),
+    accountName: user?.name || safeCases[0]?.customer_name || 'Client Workspace',
+    accountEmail: user?.email || safeCases[0]?.customer_email || '',
+    isMultiCase: safeCases.length !== 1,
+    totalCases: safeCases.length,
+    totalEvidenceItems,
+    encryptedEvidenceCount,
+    sections,
   };
 }
 

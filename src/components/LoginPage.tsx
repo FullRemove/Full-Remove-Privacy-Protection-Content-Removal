@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, KeyRound, Lock, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import type { LangCode } from '../data/translations';
 import { PORTAL_TRANSLATIONS } from '../data/portalTranslations';
@@ -24,8 +24,24 @@ export function LoginPage({
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState('');
+  const [demoEnabled, setDemoEnabled] = useState(true);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cfg) => {
+        if (active && cfg && typeof cfg.demo_login_enabled === 'boolean') {
+          setDemoEnabled(cfg.demo_login_enabled);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleStart = async (e: FormEvent) => {
     e.preventDefault();
@@ -142,7 +158,11 @@ export function LoginPage({
       </header>
 
       <main className="mx-auto flex w-full max-w-[1060px] flex-1 items-center px-5 py-12 sm:px-8">
-        <div className="grid w-full gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        <div
+          className={`grid w-full gap-8 ${
+            demoEnabled ? 'lg:grid-cols-[1.05fr_0.95fr] lg:items-start' : 'max-w-[540px] mx-auto'
+          }`}
+        >
           <section className="rounded-2xl border border-[#DCE7F2] bg-white p-7 sm:p-9 shadow-[0_18px_40px_-24px_rgba(4,30,74,0.14)]">
             <div className="text-xs font-semibold text-[#00758A]">{t.eyebrow}</div>
             <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-[#041E4A] sm:text-3xl">
@@ -234,74 +254,76 @@ export function LoginPage({
           </section>
 
           <aside className="space-y-4">
-            <div className="rounded-2xl border border-[#DCE7F2] bg-white p-6 sm:p-7 shadow-[0_12px_32px_-22px_rgba(4,30,74,0.12)]">
-              <div className="text-xs font-semibold text-[#00758A]">{t.demoEyebrow}</div>
-              <h2 className="mt-1.5 font-display text-lg font-bold text-[#041E4A]">
-                {t.demoTitle}
-              </h2>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{t.demoSubtitle}</p>
+            {demoEnabled && (
+              <div className="rounded-2xl border border-[#DCE7F2] bg-white p-6 sm:p-7 shadow-[0_12px_32px_-22px_rgba(4,30,74,0.12)]">
+                <div className="text-xs font-semibold text-[#00758A]">{t.demoEyebrow}</div>
+                <h2 className="mt-1.5 font-display text-lg font-bold text-[#041E4A]">
+                  {t.demoTitle}
+                </h2>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{t.demoSubtitle}</p>
 
-              <div className="mt-5 space-y-2.5">
-                <button
-                  type="button"
-                  disabled={busy}
-                  data-testid="demo-customer-btn"
-                  onClick={() => handleDemoLogin('customer', '/workspace')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#0057B8]/50 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#0057B8]/15 bg-[#EFF7FC] text-[#0057B8]">
-                      <UserCheck className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-[#041E4A]">
-                        {t.demoCustomerTitle}
+                <div className="mt-5 space-y-2.5">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    data-testid="demo-customer-btn"
+                    onClick={() => handleDemoLogin('customer', '/workspace')}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#0057B8]/50 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#0057B8]/15 bg-[#EFF7FC] text-[#0057B8]">
+                        <UserCheck className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-[#041E4A]">
+                          {t.demoCustomerTitle}
+                        </div>
+                        <div className="text-xs text-slate-500">{t.demoCustomerDesc}</div>
                       </div>
-                      <div className="text-xs text-slate-500">{t.demoCustomerDesc}</div>
                     </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
-                </button>
+                    <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={busy}
-                  data-testid="demo-staff-btn"
-                  onClick={() => handleDemoLogin('staff', '/staff')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#00758A]/60 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#00869E]/20 bg-[#E6F6F8] text-[#00758A]">
-                      <Users className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-[#041E4A]">{t.demoStaffTitle}</div>
-                      <div className="text-xs text-slate-500">{t.demoStaffDesc}</div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    data-testid="demo-staff-btn"
+                    onClick={() => handleDemoLogin('staff', '/staff')}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE7F2] bg-[#F7FAFC] px-4 py-3 text-start transition hover:border-[#00758A]/60 hover:bg-white hover:shadow-xs disabled:opacity-60 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#00869E]/20 bg-[#E6F6F8] text-[#00758A]">
+                        <Users className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-[#041E4A]">{t.demoStaffTitle}</div>
+                        <div className="text-xs text-slate-500">{t.demoStaffDesc}</div>
+                      </div>
                     </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
-                </button>
+                    <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={busy}
-                  data-testid="demo-admin-btn"
-                  onClick={() => handleDemoLogin('staff', '/platform-ops')}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#041E4A] bg-[#041E4A] px-4 py-3 text-start transition hover:bg-[#07224D] hover:shadow-sm disabled:opacity-60 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-[#07224D] text-[#00C8D7]">
-                      <ShieldCheck className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white">{t.demoAdminTitle}</div>
-                      <div className="text-xs text-slate-300">{t.demoAdminDesc}</div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    data-testid="demo-admin-btn"
+                    onClick={() => handleDemoLogin('staff', '/platform-ops')}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#041E4A] bg-[#041E4A] px-4 py-3 text-start transition hover:bg-[#07224D] hover:shadow-sm disabled:opacity-60 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-[#07224D] text-[#00C8D7]">
+                        <ShieldCheck className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-white">{t.demoAdminTitle}</div>
+                        <div className="text-xs text-slate-300">{t.demoAdminDesc}</div>
+                      </div>
                     </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-[#7CE7F5] shrink-0 rtl:rotate-180" />
-                </button>
+                    <ArrowRight className="h-4 w-4 text-[#7CE7F5] shrink-0 rtl:rotate-180" />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex items-start gap-3 rounded-2xl border border-[#DCE7F2] bg-white/80 p-4 text-xs text-slate-600">
               <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[#00758A]" />

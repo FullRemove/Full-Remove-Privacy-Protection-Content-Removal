@@ -35,6 +35,7 @@ import {
   type PendingThresholdPresetId,
   type ProtectionCase,
 } from '../lib/caseLogic';
+import { RemovalConfirmedBadge } from './RemovalSuccessAnimation';
 
 export type CustomerWsStatus = 'connecting' | 'live' | 'reconnecting';
 
@@ -45,6 +46,7 @@ interface CasePhaseTrackerProps {
   wsStatus: CustomerWsStatus;
   lastLiveUpdateAt?: string | null;
   highlightedCaseId?: string | null;
+  celebratedRemovedIds?: Record<string, boolean>;
   onSelectCase?: (caseId: string) => void;
   thresholdPresetId?: PendingThresholdPresetId;
   onChangeThresholdPresetId?: (id: PendingThresholdPresetId) => void;
@@ -154,6 +156,7 @@ export function CasePhaseTracker({
   wsStatus,
   lastLiveUpdateAt,
   highlightedCaseId,
+  celebratedRemovedIds,
   onSelectCase,
   thresholdPresetId,
   onChangeThresholdPresetId,
@@ -187,6 +190,7 @@ export function CasePhaseTracker({
     const prog = computeCaseProgression(caseItem);
     const priority = computeCasePendingPriority(caseItem, activeThresholds);
     const isHighlighted = highlightedCaseId === caseItem.id;
+    const isRemovedCelebrated = Boolean(celebratedRemovedIds?.[caseItem.id]);
     const currentPhaseCopy = t.phases[prog.currentPhaseId as CaseProgressionPhaseId];
     const currentPhaseTitle =
       prog.exceptionFlag === 'needs_information'
@@ -200,9 +204,11 @@ export function CasePhaseTracker({
         aria-label={t.workspace.tracker.overviewTitle}
         data-testid="case-phase-tracker-detail"
         className={`rounded-xl border p-5 space-y-4 transition-colors ${
-          isHighlighted
-            ? 'border-[#0057B8]/40 bg-[#EFF7FC]/75'
-            : 'border-[#DCE7F2] bg-white'
+          isRemovedCelebrated
+            ? 'border-emerald-300 bg-emerald-50/35 animate-[frCaseRemovedGlow_1.8s_ease-out]'
+            : isHighlighted
+              ? 'border-[#0057B8]/40 bg-[#EFF7FC]/75'
+              : 'border-[#DCE7F2] bg-white'
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFF5FA] pb-3.5">
@@ -217,6 +223,12 @@ export function CasePhaseTracker({
               <span className="font-mono text-xs font-semibold tabular-nums text-[#0057B8]">
                 ({prog.progressPercent}%)
               </span>
+              {isRemovedCelebrated && (
+                <RemovalConfirmedBadge
+                  dataTestId={`detail-removed-celebration-${caseItem.case_number}`}
+                  label={t.workspace.alerts.removedBadge}
+                />
+              )}
               <PendingPriorityBadge
                 caseNumber={caseItem.case_number}
                 priority={priority}
@@ -386,6 +398,7 @@ export function CasePhaseTracker({
             const sla = computeCaseSla(c);
             const priority = computeCasePendingPriority(c, activeThresholds);
             const highlighted = highlightedCaseId === c.id;
+            const isRemovedCelebrated = Boolean(celebratedRemovedIds?.[c.id]);
             const timeline = buildCaseChronologicalLog(c, logOrder);
             const isExpanded = Boolean(expandedCaseIds[c.id]);
             const visibleEvents = isExpanded ? timeline : timeline.slice(0, DEFAULT_VISIBLE_EVENTS);
@@ -402,9 +415,11 @@ export function CasePhaseTracker({
                 key={c.id}
                 data-testid={`tracker-case-${c.case_number}`}
                 className={`min-w-0 overflow-hidden rounded-xl border transition-colors ${
-                  highlighted
-                    ? 'border-[#0057B8] bg-[#EFF7FC]/75'
-                    : 'border-[#DCE7F2] bg-white'
+                  isRemovedCelebrated
+                    ? 'border-emerald-300 bg-emerald-50/30 animate-[frCaseRemovedGlow_1.8s_ease-out]'
+                    : highlighted
+                      ? 'border-[#0057B8] bg-[#EFF7FC]/75'
+                      : 'border-[#DCE7F2] bg-white'
                 }`}
               >
                 <button
@@ -424,6 +439,12 @@ export function CasePhaseTracker({
                         <span className="text-slate-500 font-medium">
                           {translateStatus(c.status, lang)}
                         </span>
+                        {isRemovedCelebrated && (
+                          <RemovalConfirmedBadge
+                            dataTestId={`case-removed-celebration-${c.case_number}`}
+                            label={t.workspace.alerts.removedBadge}
+                          />
+                        )}
                         <PendingPriorityBadge
                           caseNumber={c.case_number}
                           priority={priority}

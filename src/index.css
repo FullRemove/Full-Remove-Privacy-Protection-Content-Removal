@@ -87,9 +87,77 @@
   }
 }
 
+@keyframes frCheckRing {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes frCheckStroke {
+  0% {
+    stroke-dashoffset: 28;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes frEmeraldHalo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.36);
+  }
+  100% {
+    box-shadow: 0 0 0 11px rgba(5, 150, 105, 0);
+  }
+}
+
+@keyframes frSparkleDot {
+  0% {
+    opacity: 0;
+    transform: translateY(2px) scale(0.5);
+  }
+  35% {
+    opacity: 0.95;
+    transform: translateY(-4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px) scale(0.4);
+  }
+}
+
+@keyframes frCaseRemovedGlow {
+  0% {
+    background-color: #ecfdf5;
+    border-color: #34d399;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.16);
+  }
+  100% {
+    background-color: #ffffff;
+    border-color: #a7f3d0;
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
+  }
+}
+
 @media print {
+  @page {
+    margin: 12mm;
+  }
   .no-print {
     display: none !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   body.printing-certificate * {
     visibility: hidden;
@@ -100,8 +168,11 @@
   }
   body.printing-certificate #printable-certificate-sheet {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     width: 100%;
+    height: auto !important;
     background: #ffffff !important;
     color: #041e4a !important;
     box-shadow: none !important;

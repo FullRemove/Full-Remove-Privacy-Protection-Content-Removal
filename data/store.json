@@ -1,0 +1,764 @@
+{
+  "users": {
+    "sara@example.com": {
+      "email": "sara@example.com",
+      "name": "Sara Kareem",
+      "phone": "+964 770 412 8890",
+      "workspace_name": "Sara Studio Protection",
+      "access_status": "active",
+      "role": "customer",
+      "id_document_name": "sara-national-id.pdf",
+      "created_at": "2026-11-09T08:16:58.131Z"
+    },
+    "noor@example.com": {
+      "email": "noor@example.com",
+      "name": "Noor Al-Mansoor",
+      "phone": "+964 780 912 3340",
+      "workspace_name": "Al-Mansoor Media",
+      "access_status": "active",
+      "role": "customer",
+      "id_document_name": "noor-passport-scan.pdf",
+      "created_at": "2026-11-18T08:16:58.131Z"
+    },
+    "ops@fremove.com": {
+      "email": "ops@fremove.com",
+      "name": "Dara Barzani",
+      "phone": "+964 780 558 6584",
+      "workspace_name": "Full Remove Operations",
+      "access_status": "active",
+      "role": "owner",
+      "created_at": "2026-08-29T08:16:58.131Z"
+    }
+  },
+  "sessions": {
+    "bd7d42e7c13fbf5e67aca46a433abd4601ea8183124e5c5f": "sara@example.com",
+    "4443705116b0d4f212b9760b1c96d3e34b6a725610fbab91": "ops@fremove.com",
+    "3e7ec04f2e8f5c6b60ca98f9f45c53377d45391bd5773884": "sara@example.com",
+    "2b547c8e92c9e6c704fad0f9ecd6e81bced040b441ed27c5": "ops@fremove.com",
+    "6d1c39e9a173f051570aa32ab194991b04ea46ce29cda19c": "sara@example.com",
+    "7329ce6da0ef22cd85ddbe7eb215163b7ad7d502a5af00f9": "ops@fremove.com",
+    "df26b7b7d06a372e982cae6b0799feaad1a48ae84902db65": "sara@example.com",
+    "972663955958ada44528f09c23a57d0606631078df5da76b": "sara@example.com",
+    "f878f736829b6c62a95fca0998537dbbf2dc4a1a678d0cfe": "sara@example.com"
+  },
+  "authCodes": {
+    "fullremove2026@gmail.com": {
+      "email": "fullremove2026@gmail.com",
+      "code": "604419",
+      "expires_at": 1795768396739
+    }
+  },
+  "inquiries": [
+    {
+      "id": "inq-seed-1",
+      "name": "Harem Rasheed",
+      "email": "harem@example.com",
+      "interest": "Fake Website & Brand Impersonation Removal",
+      "message": "A cloned store domain is running ads using our company trademark.",
+      "language": "en",
+      "status": "new",
+      "created_at": "2026-11-26T08:16:58.131Z"
+    },
+    {
+      "id": "inq-seed-2",
+      "name": "Rebin Othman",
+      "email": "rebin@example.com",
+      "interest": "Impostor Account Removal",
+      "message": "Fake TikTok profile reposting private clinic clips to collect booking fees.",
+      "language": "ku",
+      "status": "reviewed",
+      "created_at": "2026-11-25T08:16:58.131Z"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-1041",
+      "case_number": "FR-2026-1041",
+      "customer_email": "sara@example.com",
+      "customer_name": "Sara Kareem",
+      "title": "Impersonator Instagram profile using studio photos",
+      "platform": "Instagram",
+      "source_url": "https://instagram.com/sara_studio_official_fake",
+      "complaint_type": "impersonation",
+      "description": "An unauthorized profile is reusing my photography portfolio and messaging clients asking for deposits.",
+      "status": "submitted_to_platform",
+      "service_code": "impostor_account",
+      "assigned_to": "amina@fremove.com",
+      "monitoring_enabled": true,
+      "last_monitored_at": "2026-11-26T08:16:58.131Z",
+      "submitted_at": "2026-11-23T08:16:58.131Z",
+      "updated_at": "2026-11-26T08:16:58.131Z",
+      "evidence": [
+        {
+          "id": "ev-1041-a",
+          "title": "Impersonation profile full-page capture",
+          "category": "screenshot",
+          "reference_url": "https://instagram.com/sara_studio_official_fake",
+          "file_name": "ig-impersonator-capture.png",
+          "sha256_preview": "a94e8f219c4d10b7",
+          "notes": "Captured showing stolen studio avatar and bio.",
+          "uploaded_by_role": "customer",
+          "uploaded_by_email": "sara@example.com",
+          "created_at": "2026-11-23T08:16:58.131Z"
+        },
+        {
+          "id": "ev-1041-b",
+          "title": "Official trademark & studio domain certificate",
+          "category": "ownership_proof",
+          "file_name": "sara-studio-brand-ownership.pdf",
+          "sha256_preview": "7f11c0384e9021aa",
+          "notes": "Verified match against registered profile domain.",
+          "uploaded_by_role": "staff",
+          "uploaded_by_email": "ops@fremove.com",
+          "created_at": "2026-11-24T08:16:58.131Z"
+        }
+      ],
+      "activity": [
+        {
+          "id": "act-1",
+          "activity_type": "submitted",
+          "message": "Case received with initial profile URL and evidence summary.",
+          "visibility": "customer",
+          "created_at": "2026-11-23T08:16:58.131Z"
+        },
+        {
+          "id": "act-2",
+          "activity_type": "reviewing",
+          "message": "Analyst verified impersonation evidence and brand ownership match.",
+          "visibility": "customer",
+          "created_at": "2026-11-24T08:16:58.131Z"
+        },
+        {
+          "id": "act-3",
+          "activity_type": "submitted_to_platform",
+          "message": "Official impersonation report submitted via platform portal (Ref #IG-88412).",
+          "visibility": "customer",
+          "created_at": "2026-11-26T08:16:58.131Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "msg-1",
+          "sender_role": "staff",
+          "sender_email": "ops@fremove.com",
+          "message": "We have documented the impersonation links and submitted the report through Instagram’s official impersonation channel. We will notify you as soon as Meta responds.",
+          "created_at": "2026-11-26T08:16:58.131Z"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "sub-1",
+          "platform": "Instagram",
+          "submission_channel": "platform_portal",
+          "status": "under_review",
+          "external_reference": "IG-88412",
+          "response_summary": "Acknowledged by Meta Rights & Impersonation queue.",
+          "submitted_at": "2026-11-26T08:16:58.131Z"
+        }
+      ],
+      "verifications": []
+    },
+    {
+      "id": "case-1038",
+      "case_number": "FR-2026-1038",
+      "customer_email": "sara@example.com",
+      "customer_name": "Sara Kareem",
+      "title": "Cloned e-commerce storefront imitating company branding",
+      "platform": "Website / Domain",
+      "source_url": "https://sara-brand-store-demo.example",
+      "complaint_type": "impersonation",
+      "description": "Fraudulent website copying our logo, product descriptions, and contact footer to mislead customers.",
+      "status": "needs_information",
+      "service_code": "fake_website",
+      "submitted_at": "2026-11-20T08:16:58.131Z",
+      "updated_at": "2026-11-25T08:16:58.131Z",
+      "evidence": [
+        {
+          "id": "ev-1038-a",
+          "title": "Cloned storefront checkout capture",
+          "category": "screenshot",
+          "reference_url": "https://sara-brand-store-demo.example",
+          "file_name": "cloned-checkout-capture.png",
+          "sha256_preview": "5e29d10f92b3a844",
+          "uploaded_by_role": "customer",
+          "uploaded_by_email": "sara@example.com",
+          "created_at": "2026-11-20T08:16:58.131Z"
+        }
+      ],
+      "activity": [
+        {
+          "id": "act-4",
+          "activity_type": "submitted",
+          "message": "Case submitted for fake website & domain abuse review.",
+          "visibility": "customer",
+          "created_at": "2026-11-20T08:16:58.131Z"
+        },
+        {
+          "id": "act-5",
+          "activity_type": "needs_information",
+          "message": "Requested business registration or domain ownership confirmation for registrar abuse filing.",
+          "visibility": "customer",
+          "created_at": "2026-11-25T08:16:58.131Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "msg-2",
+          "sender_role": "staff",
+          "sender_email": "ops@fremove.com",
+          "message": "To escalate this to the domain registrar and hosting provider, please reply with your official company domain or trademark registration number.",
+          "created_at": "2026-11-25T08:16:58.131Z"
+        }
+      ],
+      "submissions": [],
+      "verifications": []
+    },
+    {
+      "id": "case-1040",
+      "case_number": "FR-2026-1040",
+      "customer_email": "noor@example.com",
+      "customer_name": "Noor Al-Mansoor",
+      "title": "Synthetic deepfake interview clip circulating on TikTok",
+      "platform": "TikTok",
+      "source_url": "https://www.tiktok.com/@fake_clip_demo/video/98124",
+      "complaint_type": "deepfake",
+      "description": "Altered voice and likeness clip fabricated to impersonate our executive spokesperson.",
+      "status": "reviewing",
+      "service_code": "deepfake_video",
+      "submitted_at": "2026-11-24T08:16:58.131Z",
+      "updated_at": "2026-11-26T08:16:58.131Z",
+      "evidence": [
+        {
+          "id": "ev-1040-a",
+          "title": "Original keynote audio-visual reference",
+          "category": "ownership_proof",
+          "reference_url": "https://almansoor.example/keynote-original",
+          "file_name": "keynote-reference-frame.png",
+          "sha256_preview": "c403ab1829ef7109",
+          "uploaded_by_role": "customer",
+          "uploaded_by_email": "noor@example.com",
+          "created_at": "2026-11-24T08:16:58.131Z"
+        }
+      ],
+      "activity": [
+        {
+          "id": "act-8",
+          "activity_type": "submitted",
+          "message": "Deepfake & likeness case opened with source video URL.",
+          "visibility": "customer",
+          "created_at": "2026-11-24T08:16:58.131Z"
+        },
+        {
+          "id": "act-9",
+          "activity_type": "reviewing",
+          "message": "Specialist analyst comparing biometric source reference and upload metadata.",
+          "visibility": "customer",
+          "created_at": "2026-11-26T08:16:58.131Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "msg-3",
+          "sender_role": "customer",
+          "sender_email": "noor@example.com",
+          "message": "Attached original keynote clip URL to prove voice/face tampering.",
+          "created_at": "2026-11-25T08:16:58.131Z"
+        }
+      ],
+      "submissions": [],
+      "verifications": []
+    },
+    {
+      "id": "case-1022",
+      "case_number": "FR-2026-1022",
+      "customer_email": "sara@example.com",
+      "customer_name": "Sara Kareem",
+      "title": "Unauthorized commercial image repost on Facebook page",
+      "platform": "Facebook",
+      "source_url": "https://facebook.com/example-repost/1022",
+      "complaint_type": "copyright",
+      "description": "Original studio campaign photograph republished without license.",
+      "status": "resolved",
+      "service_code": "image_removal",
+      "monitoring_enabled": true,
+      "last_monitored_at": "2026-11-21T08:16:58.131Z",
+      "submitted_at": "2026-11-12T08:16:58.131Z",
+      "updated_at": "2026-11-21T08:16:58.131Z",
+      "evidence": [],
+      "activity": [
+        {
+          "id": "act-6",
+          "activity_type": "submitted",
+          "message": "Copyright image removal request submitted.",
+          "visibility": "customer",
+          "created_at": "2026-11-12T08:16:58.131Z"
+        },
+        {
+          "id": "act-7",
+          "activity_type": "resolved",
+          "message": "Platform removed reported post and verification check confirmed URL is unavailable.",
+          "visibility": "customer",
+          "created_at": "2026-11-21T08:16:58.131Z"
+        }
+      ],
+      "messages": [],
+      "submissions": [
+        {
+          "id": "sub-2",
+          "platform": "Facebook",
+          "submission_channel": "web_form",
+          "status": "action_taken",
+          "external_reference": "FB-DMCA-4920",
+          "response_summary": "Content removed following copyright ownership verification.",
+          "submitted_at": "2026-11-17T08:16:58.131Z"
+        }
+      ],
+      "verifications": [
+        {
+          "id": "ver-1",
+          "result": "confirmed_removed",
+          "checked_url": "https://facebook.com/example-repost/1022",
+          "notes": "Verified across public and signed-out views; post returns unavailable.",
+          "checked_at": "2026-11-21T08:16:58.131Z"
+        }
+      ]
+    }
+  ],
+  "notifications": [
+    {
+      "id": "not-1",
+      "user_email": "sara@example.com",
+      "title": "Platform report submitted for FR-2026-1041",
+      "body": "Our team filed an official impersonation report with Instagram (Ref #IG-88412).",
+      "read": false,
+      "created_at": "2026-11-26T08:16:58.131Z"
+    },
+    {
+      "id": "not-2",
+      "user_email": "sara@example.com",
+      "title": "Action needed on FR-2026-1038",
+      "body": "Please confirm your business domain or registration document so we can finalize the registrar abuse report.",
+      "read": false,
+      "created_at": "2026-11-25T08:16:58.131Z"
+    },
+    {
+      "id": "not-3",
+      "user_email": "sara@example.com",
+      "title": "Removal verified for FR-2026-1022",
+      "body": "Facebook confirmed action on your copyright report and our verification check confirmed removal.",
+      "read": true,
+      "created_at": "2026-11-21T08:16:58.131Z"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-1001",
+      "invoice_number": "INV-2026-1001",
+      "case_id": "case-1041",
+      "case_number": "FR-2026-1041",
+      "customer_email": "sara@example.com",
+      "service_code": "impostor_account",
+      "service_name": "Impostor Account Removal",
+      "amount_usd": 150,
+      "status": "paid",
+      "created_at": "2026-11-23T08:16:58.131Z"
+    },
+    {
+      "id": "inv-1002",
+      "invoice_number": "INV-2026-1002",
+      "case_id": "case-1038",
+      "case_number": "FR-2026-1038",
+      "customer_email": "sara@example.com",
+      "service_code": "fake_website",
+      "service_name": "Fake Website & Brand Impersonation Removal",
+      "amount_usd": 1500,
+      "status": "unpaid",
+      "created_at": "2026-11-21T08:16:58.131Z"
+    },
+    {
+      "id": "inv-1000",
+      "invoice_number": "INV-2026-1000",
+      "case_id": "case-1040",
+      "case_number": "FR-2026-1040",
+      "customer_email": "noor@example.com",
+      "service_code": "deepfake_video",
+      "service_name": "Deepfake & AI-Generated Video Removal",
+      "amount_usd": 1000,
+      "status": "pending_review",
+      "created_at": "2026-11-25T08:16:58.131Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-2",
+      "invoice_id": "inv-1000",
+      "invoice_number": "INV-2026-1000",
+      "customer_email": "noor@example.com",
+      "method": "bank_transfer",
+      "reference": "FIB-77492-ERB",
+      "amount_usd": 1000,
+      "status": "pending_review",
+      "whatsapp_status": "none",
+      "submitted_at": "2026-11-26T08:16:58.131Z"
+    },
+    {
+      "id": "pay-1",
+      "invoice_id": "inv-1001",
+      "invoice_number": "INV-2026-1001",
+      "customer_email": "sara@example.com",
+      "method": "bank_transfer",
+      "reference": "TXN-90281-KRD",
+      "amount_usd": 150,
+      "status": "approved",
+      "whatsapp_status": "sent_confirmed",
+      "reviewed_by": "ops@fremove.com",
+      "reviewed_at": "2026-11-23T08:16:58.131Z",
+      "submitted_at": "2026-11-23T08:16:58.131Z"
+    }
+  ],
+  "supportTickets": [
+    {
+      "id": "sup-1",
+      "ticket_number": "SUP-409",
+      "customer_email": "sara@example.com",
+      "subject": "Question about registrar abuse documentation for FR-2026-1038",
+      "category": "takedown",
+      "priority": "normal",
+      "status": "awaiting_customer",
+      "created_at": "2026-11-24T08:16:58.131Z",
+      "updated_at": "2026-11-25T08:16:58.131Z",
+      "messages": [
+        {
+          "id": "smsg-1",
+          "sender_role": "customer",
+          "sender_email": "sara@example.com",
+          "visibility": "customer",
+          "message": "Can I attach a PDF certificate of domain ownership instead of a trademark filing?",
+          "created_at": "2026-11-24T08:16:58.131Z"
+        },
+        {
+          "id": "smsg-2",
+          "sender_role": "staff",
+          "sender_email": "ops@fremove.com",
+          "visibility": "customer",
+          "message": "Yes — a WHOIS/registrar invoice showing your legal business name along with a screenshot of your official website is sufficient for the hosting abuse notice.",
+          "created_at": "2026-11-25T08:16:58.131Z"
+        }
+      ]
+    },
+    {
+      "id": "sup-2",
+      "ticket_number": "SUP-410",
+      "customer_email": "noor@example.com",
+      "subject": "Confirm receipt of bank transfer FIB-77492-ERB",
+      "category": "billing",
+      "priority": "high",
+      "status": "open",
+      "created_at": "2026-11-26T08:16:58.131Z",
+      "updated_at": "2026-11-27T07:31:58.131Z",
+      "messages": [
+        {
+          "id": "smsg-3",
+          "sender_role": "customer",
+          "sender_email": "noor@example.com",
+          "visibility": "customer",
+          "message": "We transferred $1,000 for INV-2026-1000 earlier today. Kindly confirm verification.",
+          "created_at": "2026-11-27T07:31:58.131Z"
+        }
+      ]
+    }
+  ],
+  "dataRequests": [
+    {
+      "id": "dr-1",
+      "user_email": "noor@example.com",
+      "type": "export",
+      "notes": "Requesting compliance archive copy of case evidence logs.",
+      "status": "received",
+      "created_at": "2026-11-26T08:16:58.131Z"
+    }
+  ],
+  "staffMembers": [
+    {
+      "id": "staff-1",
+      "email": "ops@fremove.com",
+      "display_name": "Dara Barzani",
+      "role": "owner",
+      "status": "active"
+    },
+    {
+      "id": "staff-2",
+      "email": "amina@fremove.com",
+      "display_name": "Amina Rashid",
+      "role": "analyst",
+      "status": "active"
+    },
+    {
+      "id": "staff-3",
+      "email": "tariq@fremove.com",
+      "display_name": "Tariq Saleh",
+      "role": "viewer",
+      "status": "active"
+    }
+  ],
+  "invitations": [],
+  "platformRoles": [
+    {
+      "id": "pr-1",
+      "email": "ops@fremove.com",
+      "role": "operations_admin",
+      "status": "active",
+      "granted_by": "system",
+      "created_at": "2026-08-29T08:16:58.131Z"
+    },
+    {
+      "id": "pr-2",
+      "email": "amina@fremove.com",
+      "role": "case_manager",
+      "status": "active",
+      "granted_by": "ops@fremove.com",
+      "created_at": "2026-10-13T08:16:58.131Z"
+    },
+    {
+      "id": "pr-3",
+      "email": "tariq@fremove.com",
+      "role": "auditor",
+      "status": "active",
+      "granted_by": "ops@fremove.com",
+      "created_at": "2026-11-07T08:16:58.131Z"
+    }
+  ],
+  "auditLog": [
+    {
+      "id": "aud-589f9125",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:39:16.007Z"
+    },
+    {
+      "id": "aud-37f99109",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:36:54.269Z"
+    },
+    {
+      "id": "aud-da124ded",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:36:16.479Z"
+    },
+    {
+      "id": "aud-515ee9a3",
+      "actor": "ops@fremove.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "owner",
+      "organization_name": "Full Remove Operations",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:28:41.819Z"
+    },
+    {
+      "id": "aud-eb1774f5",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:28:41.806Z"
+    },
+    {
+      "id": "aud-3b5e85bb",
+      "actor": "ops@fremove.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "owner",
+      "organization_name": "Full Remove Operations",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:26:46.717Z"
+    },
+    {
+      "id": "aud-9e4239f7",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:26:46.704Z"
+    },
+    {
+      "id": "aud-eea7bc2b",
+      "actor": "ops@fremove.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "owner",
+      "organization_name": "Full Remove Operations",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:24:36.155Z"
+    },
+    {
+      "id": "aud-504fd2c5",
+      "actor": "sara@example.com",
+      "action": "user_authenticated",
+      "entity_type": "auth",
+      "entity_id": "customer",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "method": "otp"
+      },
+      "created_at": "2026-11-27T08:24:36.143Z"
+    },
+    {
+      "id": "aud-1",
+      "actor": "ops@fremove.com",
+      "action": "payment_review_approved",
+      "entity_type": "payment",
+      "entity_id": "pay-1",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "invoice_number": "INV-2026-1001",
+        "amount_usd": 150
+      },
+      "created_at": "2026-11-23T08:16:58.131Z"
+    },
+    {
+      "id": "aud-2",
+      "actor": "amina@fremove.com",
+      "action": "case_submitted_to_platform",
+      "entity_type": "case",
+      "entity_id": "FR-2026-1041",
+      "organization_name": "Sara Studio Protection",
+      "details": {
+        "platform": "Instagram",
+        "external_reference": "IG-88412"
+      },
+      "created_at": "2026-11-26T08:16:58.131Z"
+    }
+  ],
+  "visitorSessions": [
+    {
+      "id": "vis-9869ec7a",
+      "visitor_key": "v-6uwh0ubq",
+      "session_key": "s-idjtp81h",
+      "ip_address": "151.236.170.154",
+      "country_code": "IQ",
+      "region": "",
+      "city": "",
+      "device_type": "desktop",
+      "browser": "Chrome",
+      "operating_system": "Windows",
+      "referrer_domain": "aistudio.google.com",
+      "landing_page": "/",
+      "last_page": "/",
+      "page_views": 5,
+      "inquiry_submitted": false,
+      "started_at": "2026-11-27T08:17:21.769Z",
+      "last_seen_at": "2026-11-27T08:36:03.220Z"
+    },
+    {
+      "id": "vis-1",
+      "visitor_key": "v84f91a2",
+      "session_key": "s112c8e1",
+      "ip_address": "185.94.210.14",
+      "country_code": "IQ",
+      "region": "Erbil",
+      "city": "Erbil",
+      "device_type": "desktop",
+      "browser": "Chrome 131",
+      "operating_system": "macOS",
+      "referrer_domain": "google.com",
+      "landing_page": "/",
+      "last_page": "/#pricing",
+      "page_views": 4,
+      "inquiry_submitted": true,
+      "started_at": "2026-11-27T08:02:58.131Z",
+      "last_seen_at": "2026-11-27T08:14:58.131Z"
+    },
+    {
+      "id": "vis-2",
+      "visitor_key": "v92a11c4",
+      "session_key": "s302f9b2",
+      "ip_address": "94.200.45.88",
+      "country_code": "AE",
+      "region": "Dubai",
+      "city": "Dubai",
+      "device_type": "mobile",
+      "browser": "Safari 18",
+      "operating_system": "iOS",
+      "referrer_domain": "Direct",
+      "landing_page": "/",
+      "last_page": "/#services",
+      "page_views": 3,
+      "inquiry_submitted": false,
+      "started_at": "2026-11-27T08:07:58.131Z",
+      "last_seen_at": "2026-11-27T08:15:58.131Z"
+    },
+    {
+      "id": "vis-3",
+      "visitor_key": "v71b44e0",
+      "session_key": "s849a2d5",
+      "ip_address": "82.132.214.19",
+      "country_code": "GB",
+      "region": "England",
+      "city": "London",
+      "device_type": "desktop",
+      "browser": "Firefox 132",
+      "operating_system": "Windows",
+      "referrer_domain": "linkedin.com",
+      "landing_page": "/privacy",
+      "last_page": "/login",
+      "page_views": 2,
+      "inquiry_submitted": false,
+      "started_at": "2026-11-27T07:40:58.131Z",
+      "last_seen_at": "2026-11-27T07:58:58.131Z"
+    },
+    {
+      "id": "vis-4",
+      "visitor_key": "v39c88b7",
+      "session_key": "s552e1c9",
+      "ip_address": "185.220.101.4",
+      "country_code": "DE",
+      "region": "Berlin",
+      "city": "Berlin",
+      "device_type": "desktop",
+      "browser": "Chrome 131",
+      "operating_system": "Linux",
+      "referrer_domain": "google.de",
+      "landing_page": "/",
+      "last_page": "/#process",
+      "page_views": 5,
+      "inquiry_submitted": false,
+      "started_at": "2026-11-26T08:16:58.131Z",
+      "last_seen_at": "2026-11-26T08:16:58.131Z"
+    }
+  ]
+}

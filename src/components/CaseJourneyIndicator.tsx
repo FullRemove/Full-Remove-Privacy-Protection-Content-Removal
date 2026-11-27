@@ -9,6 +9,7 @@ interface CaseJourneyIndicatorProps {
     'id' | 'case_number' | 'status' | 'submitted_at' | 'updated_at' | 'submissions' | 'verifications'
   >;
   variant?: 'compact' | 'timeline';
+  celebrateRemoved?: boolean;
   lang?: LangCode;
 }
 
@@ -41,6 +42,7 @@ function toneTextClass(tone: 'sky' | 'emerald' | 'amber' | 'rose'): string {
 export function CaseJourneyIndicator({
   caseItem,
   variant = 'compact',
+  celebrateRemoved = false,
   lang = 'en',
 }: CaseJourneyIndicatorProps) {
   const journey = computeCaseJourneyTimeline(caseItem);
@@ -70,10 +72,14 @@ export function CaseJourneyIndicator({
           aria-valuenow={journey.progressPercent}
           aria-valuemin={0}
           aria-valuemax={100}
-          className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80"
+          className={`h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80 ${
+            celebrateRemoved
+              ? 'animate-[frEmeraldHalo_950ms_cubic-bezier(0.16,1,0.3,1)]'
+              : ''
+          }`}
         >
           <div
-            className={`h-full rounded-full transition-all duration-300 ${fillClass}`}
+            className={`h-full rounded-full transition-all duration-500 ${fillClass}`}
             style={{ width: `${journey.progressPercent}%` }}
           />
         </div>
@@ -125,10 +131,14 @@ export function CaseJourneyIndicator({
         aria-valuenow={journey.progressPercent}
         aria-valuemin={0}
         aria-valuemax={100}
-        className="h-2 w-full overflow-hidden rounded-full bg-[#DCE7F2]"
+        className={`h-2 w-full overflow-hidden rounded-full bg-[#DCE7F2] ${
+          celebrateRemoved
+            ? 'animate-[frEmeraldHalo_950ms_cubic-bezier(0.16,1,0.3,1)]'
+            : ''
+        }`}
       >
         <div
-          className={`h-full rounded-full transition-all duration-300 ${fillClass}`}
+          className={`h-full rounded-full transition-all duration-500 ${fillClass}`}
           style={{ width: `${journey.progressPercent}%` }}
         />
       </div>
@@ -151,7 +161,11 @@ export function CaseJourneyIndicator({
               <span
                 className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${
                   isCompleted
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    ? `border-emerald-200 bg-emerald-50 text-emerald-700 ${
+                        celebrateRemoved
+                          ? 'animate-[frCheckRing_420ms_cubic-bezier(0.16,1,0.3,1)_both]'
+                          : ''
+                      }`
                     : isAttention
                       ? 'border-amber-200 bg-amber-50 text-amber-700'
                       : isCurrent

@@ -12,6 +12,7 @@ import type {
   WorkspaceAlertSummary,
   WorkspaceCaseAlert,
 } from '../lib/caseLogic';
+import { RemovalSealIcon } from './RemovalSuccessAnimation';
 
 interface WorkspaceAlertBellProps {
   alertSummary: WorkspaceAlertSummary;
@@ -245,13 +246,19 @@ export function WorkspaceToastStack({
             data-testid={`workspace-toast-${alert.caseNumber}`}
             data-alert-kind={alert.kind}
             className={`rounded-2xl border bg-white p-4 shadow-xl shadow-slate-900/10 ${
-              isResolved ? 'border-emerald-300' : 'border-amber-300'
+              isResolved
+                ? 'border-emerald-300 animate-[frFadeUp_220ms_cubic-bezier(0.16,1,0.3,1)_both,frEmeraldHalo_950ms_cubic-bezier(0.16,1,0.3,1)_both]'
+                : 'border-amber-300'
             }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
                 {isResolved ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <RemovalSealIcon
+                    size="md"
+                    animate
+                    dataTestId="removed-toast-animation"
+                  />
                 ) : (
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 )}
@@ -264,7 +271,7 @@ export function WorkspaceToastStack({
                           : 'border-amber-200 bg-amber-50 text-amber-800'
                       }`}
                     >
-                      {isResolved ? t.workspace.alerts.resolved : t.workspace.alerts.urgentInput}
+                      {isResolved ? t.workspace.alerts.removedBadge : t.workspace.alerts.urgentInput}
                     </span>
                     <span className="text-slate-500">{alert.platform}</span>
                   </div>

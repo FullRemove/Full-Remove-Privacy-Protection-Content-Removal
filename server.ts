@@ -5,6 +5,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 import {
   applyCaseTransition,
   canCustomerRequestRecheck,
@@ -138,10 +140,63 @@ interface StoreData {
   visitorSessions: VisitorSessionRecord[];
 }
 
-const DATA_DIR = path.resolve(process.cwd(), '.data');
+const ENTRY_FILE_PATH = fileURLToPath(import.meta.url);
+const APP_ROOT = path.dirname(ENTRY_FILE_PATH);
+const ENTRY_FILENAME = path.basename(ENTRY_FILE_PATH);
+const IS_PRODUCTION =
+  process.env.NODE_ENV === 'production' || ENTRY_FILENAME === 'server.js';
+
+function cleanEnv(name: string): string {
+  const val = process.env[name]?.trim() || '';
+  if (!val || /^secret value$/i.test(val) || /^my_/i.test(val)) return '';
+  return val;
+}
+
+const configuredDataDir = cleanEnv('DATA_DIR');
+const DATA_DIR = configuredDataDir
+  ? path.resolve(APP_ROOT, configuredDataDir)
+  : path.join(APP_ROOT, '.data');
 const STORE_PATH = path.join(DATA_DIR, 'store.json');
 const VAULT_DIR = path.join(DATA_DIR, 'vault');
 const VAULT_KEY_PATH = path.join(VAULT_DIR, '.master.key');
+
+function isSmtpConfigured(): boolean {
+  return Boolean(cleanEnv('SMTP_HOST') && cleanEnv('SMTP_USER') && cleanEnv('SMTP_PASS'));
+}
+
+async function sendOtpEmailIfConfigured(recipientEmail: string, code: string): Promise<void> {
+  const host = cleanEnv('SMTP_HOST');
+  const user = cleanEnv('SMTP_USER');
+  const pass = cleanEnv('SMTP_PASS');
+  if (!host || !user || !pass) return;
+
+  const parsedPort = Number(cleanEnv('SMTP_PORT') || 465);
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 465;
+  const rawSecure = cleanEnv('SMTP_SECURE');
+  const secure = rawSecure ? rawSecure.toLowerCase() === 'true' : port === 465;
+  const fromAddress = cleanEnv('FROM_EMAIL') || user;
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  });
+
+  await transporter.sendMail({
+    from: `"Full Remove Portal" <${fromAddress}>`,
+    to: recipientEmail,
+    subject: `Your Full Remove verification code: ${code}`,
+    text: `Your one-time Full Remove verification code is: ${code}\n\nThis code expires in 15 minutes. If you did not request this sign-in, please ignore this email.`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #DCE7F2;border-radius:12px;color:#041E4A;">
+      <p style="font-size:12px;font-weight:700;color:#00758A;margin:0 0 8px;">FULL REMOVE · CLIENT PORTAL</p>
+      <h2 style="margin:0 0 12px;font-size:20px;">Your sign-in verification code</h2>
+      <p style="font-size:14px;line-height:1.5;color:#475569;margin:0 0 18px;">Enter this one-time code to access your private case workspace. It expires in 15 minutes.</p>
+      <div style="font-family:monospace;font-size:28px;font-weight:700;letter-spacing:6px;padding:14px 18px;background:#EFF5FA;border:1px solid #DCE7F2;border-radius:8px;text-align:center;color:#041E4A;">${code}</div>
+      <p style="font-size:12px;color:#64748b;margin:18px 0 0;">If you did not request this login code, no action is needed.</p>
+    </div>`,
+  });
+}
 
 const rateBuckets = new Map<string, number[]>();
 
@@ -1066,9 +1121,22 @@ async function startServer() {
   // Production readiness & liveness health endpoint
   app.get('/api/health', (_req, res) => {
     const store = loadStore();
+    const distReady = fs.existsSync(path.join(APP_ROOT, 'dist', 'index.html'));
+    let storageWritable = false;
+    try {
+      fs.accessSync(DATA_DIR, fs.constants.W_OK);
+      storageWritable = true;
+    } catch {
+      storageWritable = false;
+    }
     res.json({
       ok: true,
       status: 'healthy',
+      mode: IS_PRODUCTION ? 'production' : 'development',
+      dist_ready: distReady,
+      storage_writable: storageWritable,
+      smtp_configured: isSmtpConfigured(),
+      demo_login_enabled: process.env.ALLOW_DEMO_LOGIN !== 'false',
       uptime_seconds: Math.round(process.uptime()),
       ws_operators: activityWss ? activityWss.clients.size : 0,
       ws_customers: customerWss ? customerWss.clients.size : 0,
@@ -1273,8 +1341,17 @@ async function startServer() {
     res.json({ ok: true });
   });
 
+  // Auth capabilities endpoint for Login UI
+  app.get('/api/auth/config', (_req, res) => {
+    res.json({
+      ok: true,
+      demo_login_enabled: process.env.ALLOW_DEMO_LOGIN !== 'false',
+      smtp_configured: isSmtpConfigured(),
+    });
+  });
+
   // Auth endpoints
-  app.post('/api/auth/start', (req, res) => {
+  app.post('/api/auth/start', async (req, res) => {
     if (!checkRateLimit(getClientIp(req), 'auth_start', 10, 60000)) {
       res.status(429).json({ ok: false, error: 'Too many sign-in attempts. Please wait a minute.' });
       return;
@@ -1299,7 +1376,28 @@ async function startServer() {
       expires_at: Date.now() + 15 * 60 * 1000,
     };
     saveStore(store);
-    res.json({ ok: true, email, dev_code: code });
+
+    const smtpActive = isSmtpConfigured();
+    if (smtpActive) {
+      try {
+        await sendOtpEmailIfConfigured(email, code);
+      } catch (err) {
+        console.error('SMTP email send failed:', err);
+        res.status(502).json({
+          ok: false,
+          error: 'Unable to send verification email. Please verify your SMTP configuration.',
+        });
+        return;
+      }
+    }
+
+    const allowDevCode = !smtpActive && process.env.ALLOW_DEV_LOGIN_CODE !== 'false';
+    res.json({
+      ok: true,
+      email,
+      delivery: smtpActive ? 'email' : 'preview',
+      ...(allowDevCode ? { dev_code: code } : {}),
+    });
   });
 
   app.post('/api/auth/verify', (req, res) => {
@@ -1338,6 +1436,10 @@ async function startServer() {
   });
 
   app.post('/api/auth/demo', (req, res) => {
+    if (process.env.ALLOW_DEMO_LOGIN === 'false') {
+      res.status(403).json({ ok: false, error: 'Demo access is disabled in production mode.' });
+      return;
+    }
     const role = req.body?.role === 'staff' ? 'staff' : 'customer';
     const email = role === 'staff' ? 'ops@fremove.com' : 'sara@example.com';
     const store = loadStore();
@@ -3894,11 +3996,39 @@ async function startServer() {
     res.status(400).json({ error: 'Unsupported platform operation action.' });
   });
 
-  if (process.env.NODE_ENV === 'production') {
-    const distDir = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distDir));
+  if (IS_PRODUCTION) {
+    const distDir = path.join(APP_ROOT, 'dist');
+    const indexHtmlPath = path.join(distDir, 'index.html');
+    if (!fs.existsSync(indexHtmlPath)) {
+      console.warn(
+        `[Full Remove] Production bundle not found at ${indexHtmlPath}. Run "npm run build" before starting.`
+      );
+    }
+    app.use(
+      express.static(distDir, {
+        maxAge: '7d',
+        setHeaders(res, filePath) {
+          if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+          } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
+      })
+    );
+    app.use('/api/*', (_req, res) => {
+      res.status(404).json({ error: 'API endpoint not found.' });
+    });
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(distDir, 'index.html'));
+      if (!fs.existsSync(indexHtmlPath)) {
+        res
+          .status(503)
+          .type('text/plain')
+          .send('Application build missing. Run "npm run build" and restart the Node.js app.');
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(indexHtmlPath);
     });
   } else {
     const { createServer: createViteServer } = await import('vite');
@@ -3909,7 +4039,10 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  const port = Number(process.env.PORT || 3000);
+  const rawPort = process.env.PORT?.trim();
+  const listenTarget: string | number =
+    rawPort && Number.isNaN(Number(rawPort)) ? rawPort : Number(rawPort || 3000);
+  const listenHost = process.env.HOST?.trim() || '0.0.0.0';
   const httpServer = http.createServer(app);
   const wss = new WebSocketServer({ noServer: true });
   activityWss = wss;
@@ -4036,9 +4169,41 @@ async function startServer() {
     }
   );
 
-  httpServer.listen(port, '0.0.0.0', () => {
-    console.log(`Full Remove server running on http://0.0.0.0:${port}`);
-  });
+  // Keep WebSocket connections alive through Hostinger Nginx/LiteSpeed reverse proxies
+  const wsHeartbeatTimer = setInterval(() => {
+    for (const client of wss.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.ping();
+      }
+    }
+    for (const client of customerSocketServer.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.ping();
+      }
+    }
+  }, 25_000);
+  wsHeartbeatTimer.unref();
+
+  const handleShutdown = (signal: string) => {
+    console.log(`Received ${signal}, shutting down Full Remove server...`);
+    clearInterval(wsHeartbeatTimer);
+    httpServer.close(() => {
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(0), 5000).unref();
+  };
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+
+  if (typeof listenTarget === 'string') {
+    httpServer.listen(listenTarget, () => {
+      console.log(`Full Remove server running on socket ${listenTarget} (${IS_PRODUCTION ? 'production' : 'development'})`);
+    });
+  } else {
+    httpServer.listen(listenTarget, listenHost, () => {
+      console.log(`Full Remove server running on http://${listenHost}:${listenTarget} (${IS_PRODUCTION ? 'production' : 'development'})`);
+    });
+  }
 }
 
 startServer().catch((err) => {

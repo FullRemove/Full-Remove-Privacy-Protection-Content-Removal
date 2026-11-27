@@ -184,6 +184,9 @@ export interface PortalCopy {
       viewResolution: string;
       replyNow: string;
       dismiss: string;
+      removedBadge: string;
+      removedTitle: string;
+      removedBannerDesc: string;
     };
     casesTable: {
       caseNum: string;
@@ -707,6 +710,19 @@ export interface PortalCopy {
       noVerification: string;
       noEvidence: string;
       toastDownloaded: (caseNumber: string) => string;
+      downloadReportBtn: string;
+      evidenceReportTitle: string;
+      workspaceReportTitle: string;
+      generatedAt: string;
+      caseDescription: string;
+      evidenceCountLabel: (n: number) => string;
+      evidenceColItem: string;
+      evidenceColCategory: string;
+      evidenceColIntegrity: string;
+      evidenceColRecorded: string;
+      encryptedVaultLabel: string;
+      metadataOnlyLabel: string;
+      casesCountLabel: (n: number) => string;
     };
     watchlist: {
       label: string;
@@ -885,6 +901,7 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       analyst: 'Reviewer',
       viewer: 'Read-only',
       customer: 'Client',
+      staff: 'Staff',
     },
     sla: {
       completed: 'Done',
@@ -1066,6 +1083,9 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         viewResolution: 'View result',
         replyNow: 'Reply now',
         dismiss: 'Dismiss',
+        removedBadge: 'Removed confirmed',
+        removedTitle: 'Content successfully removed',
+        removedBannerDesc: 'Removal has been verified. Your closure certificate is ready to download.',
       },
       casesTable: {
         caseNum: 'Case #',
@@ -1634,6 +1654,19 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         noVerification: 'No live link verification check recorded yet.',
         noEvidence: 'No evidence files attached.',
         toastDownloaded: (caseNumber) => `Saved PDF summary for ${caseNumber}.`,
+        downloadReportBtn: 'Download Report',
+        evidenceReportTitle: 'Case Evidence & Verification Report',
+        workspaceReportTitle: 'Workspace Evidence & Case Dossier',
+        generatedAt: 'Generated',
+        caseDescription: 'Case summary',
+        evidenceCountLabel: (n) => `${n} archived ${n === 1 ? 'item' : 'items'}`,
+        evidenceColItem: 'Evidence item & notes',
+        evidenceColCategory: 'Category',
+        evidenceColIntegrity: 'Integrity & encryption',
+        evidenceColRecorded: 'Recorded',
+        encryptedVaultLabel: 'AES-256-GCM Vault',
+        metadataOnlyLabel: 'Metadata record',
+        casesCountLabel: (n) => `${n} ${n === 1 ? 'case' : 'cases'}`,
       },
       watchlist: {
         label: 'URL Watchlist',
@@ -1833,6 +1866,7 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       analyst: 'مراجع',
       viewer: 'قراءة فقط',
       customer: 'عميل',
+      staff: 'فريق العمل',
     },
     sla: {
       completed: 'مكتمل',
@@ -2014,6 +2048,9 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         viewResolution: 'عرض النتيجة',
         replyNow: 'الرد الآن',
         dismiss: 'إخفاء',
+        removedBadge: 'تمت إزالة المحتوى',
+        removedTitle: 'تمت إزالة المحتوى بنجاح',
+        removedBannerDesc: 'تم التحقق من إزالة المحتوى. شهادة الإغلاق الخاصة بك جاهزة للتنزيل.',
       },
       casesTable: {
         caseNum: 'رقم الحالة',
@@ -2582,6 +2619,19 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         noVerification: 'لم يُجرَ فحص مباشر للرابط بعد.',
         noEvidence: 'لا توجد ملفات أدلة مرفقة.',
         toastDownloaded: (caseNumber) => `تم حفظ شهادة PDF للحالة ${caseNumber}.`,
+        downloadReportBtn: 'تحميل التقرير',
+        evidenceReportTitle: 'تقرير أدلة الحالة والتحقق الرسمي',
+        workspaceReportTitle: 'ملف أدلة وتقارير الحالات الشامل',
+        generatedAt: 'تاريخ الإصدار',
+        caseDescription: 'ملخص الحالة',
+        evidenceCountLabel: (n) => `${n} ${n === 1 ? 'مرفق موثّق' : 'مرفقات موثّقة'}`,
+        evidenceColItem: 'الدليل والملاحظات',
+        evidenceColCategory: 'التصنيف',
+        evidenceColIntegrity: 'التحقق والتشفير',
+        evidenceColRecorded: 'تاريخ التوثيق',
+        encryptedVaultLabel: 'خزنة AES-256-GCM',
+        metadataOnlyLabel: 'سجل بيانات',
+        casesCountLabel: (n) => `${n} ${n === 1 ? 'حالة' : 'حالات'}`,
       },
       watchlist: {
         label: 'مراقبة الرابط',
@@ -2781,6 +2831,7 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
       analyst: 'پێداچوونەوەر',
       viewer: 'تەنها خوێندنەوە',
       customer: 'بەکارهێنەر',
+      staff: 'ستاف',
     },
     sla: {
       completed: 'تەواوبوو',
@@ -2962,6 +3013,9 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         viewResolution: 'بینینی ئەنجام',
         replyNow: 'ئێستا وەڵام بدەرەوە',
         dismiss: 'لابردن',
+        removedBadge: 'سڕینەوە پشتڕاستکرایەوە',
+        removedTitle: 'ناوەڕۆک بە سەرکەوتوویی لابرا',
+        removedBannerDesc: 'لابردنی ناوەڕۆک پشتڕاستکرایەوە. بڕوانامەی داخستنەکەت ئامادەیە بۆ داگرتن.',
       },
       casesTable: {
         caseNum: 'کەیس #',
@@ -3530,6 +3584,19 @@ export const PORTAL_TRANSLATIONS: Record<LangCode, PortalCopy> = {
         noVerification: 'هێشتا پشکنینی ڕاستەوخۆی بەستەر ئەنجام نەدراوە.',
         noEvidence: 'هیچ فایلێکی بەڵگە هاوپێچ نەکراوە.',
         toastDownloaded: (caseNumber) => `بڕوانامەی PDF بۆ ${caseNumber} پاشەکەوت کرا.`,
+        downloadReportBtn: 'داگرتنی ڕاپۆرت',
+        evidenceReportTitle: 'ڕاپۆرتی بەڵگەکانی کەیس و پشتڕاستکردنەوەی فەرمی',
+        workspaceReportTitle: 'دۆسیەی گشتی بەڵگە و کەیسەکان',
+        generatedAt: 'دەرچوو لە',
+        caseDescription: 'پوختەی کەیس',
+        evidenceCountLabel: (n) => `${n} بەڵگەی تۆمارکراو`,
+        evidenceColItem: 'بەڵگە و تێبینی',
+        evidenceColCategory: 'جۆر',
+        evidenceColIntegrity: 'دڵنیایی و شفرەکردن',
+        evidenceColRecorded: 'کاتی تۆمارکردن',
+        encryptedVaultLabel: 'قاسەی AES-256-GCM',
+        metadataOnlyLabel: 'تۆماری داتا',
+        casesCountLabel: (n) => `${n} دۆسیە`,
       },
       watchlist: {
         label: 'چاودێری بەستەر',

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { flushSync } from 'react-dom';
 import {
   ArrowRight,
   Bell,
@@ -49,6 +50,7 @@ import {
   formatCurrencyUsd,
   formatFileSizeLabel,
   getPendingThresholdPreset,
+  isCaseRemovedTransition,
   mergeWorkspaceToastAlerts,
   SERVICE_PACKAGES,
   type ComplaintType,
@@ -70,7 +72,12 @@ import { CaseJourneyIndicator } from './CaseJourneyIndicator';
 import { CasePhaseTracker, type CustomerWsStatus } from './CasePhaseTracker';
 import { FilePreviewModal } from './FilePreviewModal';
 import { PortalLanguageSwitcher } from './PortalLanguageSwitcher';
+import {
+  PrintableCertificateModal,
+  triggerCertificatePrint,
+} from './PrintableCertificateModal';
 import { QuickJumpModal } from './QuickJumpModal';
+import { RemovalConfirmedBadge, RemovalSealIcon } from './RemovalSuccessAnimation';
 import { WorkspaceAlertBell, WorkspaceToastStack } from './WorkspaceAlertCenter';
 
 interface WorkspacePageProps {
@@ -188,9 +195,14 @@ export function WorkspacePage({
   const [pendingThresholdPresetId, setPendingThresholdPresetId] =
     useState<PendingThresholdPresetId>('standard');
   const [liveToastAlerts, setLiveToastAlerts] = useState<WorkspaceCaseAlert[]>([]);
+  const [celebratedRemovedIds, setCelebratedRemovedIds] = useState<Record<string, boolean>>({});
   const casesByIdRef = useRef<Map<string, ProtectionCase>>(new Map());
   const pendingPresetRef = useRef<PendingThresholdPresetId>('standard');
   pendingPresetRef.current = pendingThresholdPresetId;
+
+  const triggerRemovedCelebration = useCallback((caseId: string) => {
+    setCelebratedRemovedIds((prev) => (prev[caseId] ? prev : { ...prev, [caseId]: true }));
+  }, []);
 
   const t = PORTAL_TRANSLATIONS[lang];
   const langRef = useRef<LangCode>(lang);
@@ -227,6 +239,7 @@ export function WorkspacePage({
   const [evFileSize, setEvFileSize] = useState(0);
   const [evNotes, setEvNotes] = useState('');
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [printableReportCases, setPrintableReportCases] = useState<ProtectionCase[] | null>(null);
   const [quickJumpOpen, setQuickJumpOpen] = useState(false);
 
   useEffect(() => {
@@ -296,6 +309,9 @@ export function WorkspacePage({
           const triggered: WorkspaceCaseAlert[] = [];
           for (const nextCase of json.cases) {
             const prevCase = casesByIdRef.current.get(nextCase.id);
+            if (isCaseRemovedTransition(prevCase, nextCase)) {
+              triggerRemovedCelebration(nextCase.id);
+            }
             const alert = classifyCaseTransitionAlert(prevCase, nextCase, thresholds);
             if (alert) triggered.push(alert);
           }
@@ -329,7 +345,7 @@ export function WorkspacePage({
         if (!silent) setLoading(false);
       }
     },
-    [onNavigate, payInvoiceId, pkgCaseId]
+    [onNavigate, payInvoiceId, pkgCaseId, triggerRemovedCelebration]
   );
 
   useEffect(() => {
@@ -383,6 +399,9 @@ export function WorkspacePage({
 
             const preset = getPendingThresholdPreset(pendingPresetRef.current);
             const prevCase = casesByIdRef.current.get(updatedCase.id);
+            if (isCaseRemovedTransition(prevCase, updatedCase)) {
+              triggerRemovedCelebration(updatedCase.id);
+            }
             const transitionAlert = classifyCaseTransitionAlert(prevCase, updatedCase, {
               highPriorityHours: preset.highPriorityHours,
               urgentHours: preset.urgentHours,
@@ -429,7 +448,7 @@ export function WorkspacePage({
       if (highlightTimer) clearTimeout(highlightTimer);
       if (ws) ws.close();
     };
-  }, [loadWorkspace]);
+  }, [loadWorkspace, triggerRemovedCelebration]);
 
   const selectedCase = useMemo(
     () => data?.cases.find((c) => c.id === selectedCaseId) || null,
@@ -574,6 +593,17 @@ export function WorkspacePage({
     } catch {
       setBanner({ kind: 'error', text: t.workspace.loadError });
     }
+  };
+
+  const handleDownloadPrintReport = (targetCases: ProtectionCase[]) => {
+    if (!targetCases || targetCases.length === 0) {
+      setBanner({ kind: 'error', text: t.common.noResults });
+      return;
+    }
+    flushSync(() => {
+      setPrintableReportCases(targetCases);
+    });
+    triggerCertificatePrint();
   };
 
   const handleSubmitRecheck = async (e: FormEvent) => {
@@ -975,7 +1005,7 @@ export function WorkspacePage({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 start-0 z-30 w-64 shrink-0 border-e border-[#DCE7F2] bg-white flex flex-col justify-between transition-transform lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto ${
+        className={`no-print fixed inset-y-0 start-0 z-30 w-64 shrink-0 border-e border-[#DCE7F2] bg-white flex flex-col justify-between transition-transform lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto ${
           sidebarOpen ? 'translate-x-0' : 'max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full'
         }`}
       >
@@ -1064,7 +1094,7 @@ export function WorkspacePage({
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className={`flex-1 min-w-0 flex flex-col ${printableReportCases ? 'no-print' : ''}`}>
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-[#DCE7F2] bg-white/95 px-4 sm:px-6 backdrop-blur-md no-print">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -1181,7 +1211,21 @@ export function WorkspacePage({
                               summaryMetrics.totalCases
                             )})
                           </span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              data-testid="overview-download-report-btn"
+                              disabled={data.cases.length === 0}
+                              onClick={() =>
+                                handleDownloadPrintReport(
+                                  overviewCases.length > 0 ? overviewCases : data.cases
+                                )
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#041E4A]/20 bg-white px-3 py-1.5 text-xs font-semibold text-[#041E4A] hover:border-[#0057B8]/40 hover:bg-[#F7FAFC] disabled:opacity-45 cursor-pointer"
+                            >
+                              <Printer className="h-3.5 w-3.5 text-[#0057B8]" />
+                              <span>{t.enhancements.certificate.downloadReportBtn}</span>
+                            </button>
                             <button
                               type="button"
                               data-testid="overview-export-csv-btn"
@@ -1349,6 +1393,7 @@ export function WorkspacePage({
                       wsStatus={wsStatus}
                       lastLiveUpdateAt={lastLiveUpdateAt}
                       highlightedCaseId={highlightedCaseId}
+                      celebratedRemovedIds={celebratedRemovedIds}
                       thresholdPresetId={pendingThresholdPresetId}
                       onChangeThresholdPresetId={setPendingThresholdPresetId}
                       onSelectCase={(id) => {
@@ -1396,6 +1441,7 @@ export function WorkspacePage({
                           ) : (
                             overviewCases.slice(0, 5).map((c) => {
                               const sla = computeCaseSla(c);
+                              const isRemovedCelebrated = Boolean(celebratedRemovedIds[c.id]);
                               return (
                                 <button
                                   key={c.id}
@@ -1404,7 +1450,11 @@ export function WorkspacePage({
                                     setSelectedCaseId(c.id);
                                     setCaseModalSection('timeline');
                                   }}
-                                  className="block w-full min-w-0 py-3.5 text-start hover:bg-slate-50/85 px-2 rounded-xl transition cursor-pointer"
+                                  className={`block w-full min-w-0 py-3.5 text-start hover:bg-slate-50/85 px-2 rounded-xl transition cursor-pointer ${
+                                    isRemovedCelebrated
+                                      ? 'border border-emerald-200 bg-emerald-50/35 animate-[frCaseRemovedGlow_1.8s_ease-out]'
+                                      : ''
+                                  }`}
                                 >
                                   <div className="flex items-center justify-between gap-4 min-w-0">
                                     <div className="min-w-0 flex-1">
@@ -1417,6 +1467,9 @@ export function WorkspacePage({
                                         </span>
                                         <span className="text-slate-300">·</span>
                                         <span className="text-slate-600">{c.platform}</span>
+                                        {isRemovedCelebrated && (
+                                          <RemovalConfirmedBadge label={t.workspace.alerts.removedBadge} />
+                                        )}
                                       </div>
                                       <div className="mt-0.5 truncate text-sm font-semibold text-[#041E4A]">
                                         {c.title}
@@ -1433,7 +1486,12 @@ export function WorkspacePage({
                                       </div>
                                     </div>
                                   </div>
-                                  <CaseJourneyIndicator lang={lang} caseItem={c} variant="compact" />
+                                  <CaseJourneyIndicator
+                                    lang={lang}
+                                    caseItem={c}
+                                    variant="compact"
+                                    celebrateRemoved={isRemovedCelebrated}
+                                  />
                                 </button>
                               );
                             })
@@ -1584,6 +1642,7 @@ export function WorkspacePage({
                         <tbody className="divide-y divide-[#EFF5FA]">
                           {visibleCases.map((c) => {
                             const sla = computeCaseSla(c);
+                            const isRemovedCelebrated = Boolean(celebratedRemovedIds[c.id]);
                             return (
                               <tr
                                 key={c.id}
@@ -1591,7 +1650,11 @@ export function WorkspacePage({
                                   setSelectedCaseId(c.id);
                                   setCaseModalSection('timeline');
                                 }}
-                                className="hover:bg-slate-50/80 cursor-pointer"
+                                className={`hover:bg-slate-50/80 cursor-pointer ${
+                                  isRemovedCelebrated
+                                    ? 'bg-emerald-50/40 animate-[frCaseRemovedGlow_1.8s_ease-out]'
+                                    : ''
+                                }`}
                               >
                                 <td className="px-5 py-3.5 font-mono font-semibold text-[#0057B8] whitespace-nowrap">
                                   <button
@@ -1615,12 +1678,22 @@ export function WorkspacePage({
                                   {t.common.filesCount(c.evidence?.length || 0)}
                                 </td>
                                 <td className="px-5 py-3.5 min-w-[210px]">
-                                  <CaseJourneyIndicator lang={lang} caseItem={c} variant="compact" />
+                                  <CaseJourneyIndicator
+                                    lang={lang}
+                                    caseItem={c}
+                                    variant="compact"
+                                    celebrateRemoved={isRemovedCelebrated}
+                                  />
                                 </td>
                                 <td
                                   className={`px-5 py-3.5 text-xs font-semibold ${statusTextTone(c.status)}`}
                                 >
-                                  {translateStatus(c.status, lang)}
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span>{translateStatus(c.status, lang)}</span>
+                                    {isRemovedCelebrated && (
+                                      <RemovalConfirmedBadge label={t.workspace.alerts.removedBadge} />
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-5 py-3.5 text-end text-xs text-slate-500 tabular-nums">
                                   {translateSlaLabel(sla, lang)}
@@ -2418,7 +2491,9 @@ export function WorkspacePage({
       {/* Case Detail + Evidence Vault Modal */}
       {selectedCase && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#041E4A]/45 p-4 backdrop-blur-xs"
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#041E4A]/45 p-4 backdrop-blur-xs ${
+            printableReportCases ? 'no-print' : ''
+          }`}
           role="dialog"
           aria-modal="true"
         >
@@ -2444,6 +2519,15 @@ export function WorkspacePage({
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  data-testid="detail-download-report-btn"
+                  onClick={() => handleDownloadPrintReport([selectedCase])}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0057B8] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#004494] cursor-pointer"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>{t.enhancements.certificate.downloadReportBtn}</span>
+                </button>
                 <button
                   type="button"
                   data-testid="detail-certificate-pdf-btn"
@@ -2492,14 +2576,47 @@ export function WorkspacePage({
               </div>
             )}
 
+            {celebratedRemovedIds[selectedCase.id] && (
+              <div
+                data-testid="modal-removed-celebration-banner"
+                className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/75 px-4 py-3 animate-[frFadeUp_220ms_cubic-bezier(0.16,1,0.3,1)_both,frCaseRemovedGlow_1.8s_ease-out]"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <RemovalSealIcon size="md" animate />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-emerald-900">
+                      {t.workspace.alerts.removedTitle}
+                    </div>
+                    <p className="mt-0.5 text-xs text-emerald-800">
+                      {t.workspace.alerts.removedBannerDesc}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCaseCertificate(selectedCase)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 cursor-pointer shrink-0"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span>{t.enhancements.certificate.downloadBtn}</span>
+                </button>
+              </div>
+            )}
+
             <div className="mt-4 space-y-4">
-              <CaseJourneyIndicator lang={lang} caseItem={selectedCase} variant="timeline" />
+              <CaseJourneyIndicator
+                lang={lang}
+                caseItem={selectedCase}
+                variant="timeline"
+                celebrateRemoved={Boolean(celebratedRemovedIds[selectedCase.id])}
+              />
               <CasePhaseTracker
                 lang={lang}
                 mode="detail"
                 caseItem={selectedCase}
                 wsStatus={wsStatus}
                 highlightedCaseId={highlightedCaseId}
+                celebratedRemovedIds={celebratedRemovedIds}
                 thresholdPresetId={pendingThresholdPresetId}
               />
             </div>
@@ -2779,6 +2896,25 @@ export function WorkspacePage({
                   </button>
                 </form>
 
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#041E4A]">
+                    <span>{t.enhancements.certificate.evidenceHeader}</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="font-mono text-[11px] font-medium text-slate-500 tabular-nums">
+                      {t.enhancements.certificate.evidenceCountLabel((selectedCase.evidence || []).length)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="evidence-download-report-btn"
+                    onClick={() => handleDownloadPrintReport([selectedCase])}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#0057B8]/30 bg-[#EFF7FC] px-3 py-1.5 text-xs font-semibold text-[#0057B8] hover:bg-[#DCEEFB] cursor-pointer"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    <span>{t.enhancements.certificate.downloadReportBtn}</span>
+                  </button>
+                </div>
+
                 <div className="space-y-2">
                   {(selectedCase.evidence || []).map((ev) => (
                     <div
@@ -3005,6 +3141,16 @@ export function WorkspacePage({
           },
         }))}
       />
+
+      {printableReportCases && (
+        <PrintableCertificateModal
+          cases={printableReportCases}
+          user={data?.user}
+          lang={lang}
+          onClose={() => setPrintableReportCases(null)}
+          onDownloadPdf={handleDownloadCaseCertificate}
+        />
+      )}
 
       <WorkspaceToastStack
         lang={lang}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   applyCaseTransition,
   buildCaseChronologicalLog,
+  buildCaseEvidencePrintReport,
   buildCaseHistoryCsv,
   buildCaseReportDocument,
   buildCsv,
@@ -45,6 +46,7 @@ import {
   getServiceByCode,
   hasPlatformPermission,
   isCaseActiveStatus,
+  isCaseRemovedTransition,
   isPublicHttpUrlSafe,
   isReappearedSweepFinding,
   mergeActivityEventsIdempotent,
@@ -1058,6 +1060,106 @@ test('canCustomerRequestRecheck, validateRecheckRequestInput, watched filter, sl
   const platformCsv = buildPlatformAnalyticsCsv(breakdown);
   assert.match(platformCsv, /"Platform","Total Cases","Active Cases","Resolved Cases"/);
   assert.match(platformCsv, /"Instagram"/);
+});
+
+test('isCaseRemovedTransition and classifyCaseTransitionAlert detect Removed transitions accurately', () => {
+  const nowMs = new Date('2026-11-27T08:00:00.000Z').getTime();
+
+  // Initial hydration (undefined prevCase) must not fire celebration
+  assert.equal(isCaseRemovedTransition(undefined, sampleCases[2]), false);
+
+  // Already resolved case staying resolved must not re-fire celebration
+  assert.equal(isCaseRemovedTransition(sampleCases[2], sampleCases[2]), false);
+
+  // Transition from reviewing -> resolved fires celebration
+  const resolvedNext: ProtectionCase = {
+    ...sampleCases[0],
+    status: 'resolved',
+    updated_at: '2026-11-27T08:00:00.000Z',
+  };
+  assert.equal(isCaseRemovedTransition(sampleCases[0], resolvedNext), true);
+
+  // Verification appended at end with confirmed_removed (even before status changes) fires celebration & alert
+  const verifiedRemovedNext: ProtectionCase = {
+    ...sampleCases[0],
+    status: 'action_taken',
+    updated_at: '2026-11-27T08:05:00.000Z',
+    verifications: [
+      {
+        id: 'ver-old',
+        result: 'still_accessible',
+        checked_url: sampleCases[0].source_url,
+        checked_at: '2026-11-26T10:00:00.000Z',
+      },
+      {
+        id: 'ver-new',
+        result: 'confirmed_removed',
+        checked_url: sampleCases[0].source_url,
+        checked_at: '2026-11-27T08:05:00.000Z',
+      },
+    ],
+  };
+  assert.equal(isCaseRemovedTransition(sampleCases[0], verifiedRemovedNext), true);
+  assert.equal(isCaseRemovedTransition(verifiedRemovedNext, verifiedRemovedNext), false);
+
+  const alert = classifyCaseTransitionAlert(sampleCases[0], verifiedRemovedNext, undefined, nowMs);
+  assert.ok(alert);
+  assert.equal(alert.kind, 'resolved');
+});
+
+test('buildCaseEvidencePrintReport compiles single-case and workspace forensic evidence reports', () => {
+  const nowMs = new Date('2026-11-27T08:30:00.000Z').getTime();
+  const caseWithEvidence: ProtectionCase = {
+    ...sampleCases[0],
+    evidence: [
+      {
+        id: 'ev-rep-1',
+        title: 'Profile screenshot capture',
+        category: 'screenshot',
+        file_name: 'ig-impostor.png',
+        reference_url: 'https://instagram.com/fake_studio_account',
+        sha256_preview: '9f8e7d6c5b4a3210',
+        has_encrypted_file: true,
+        uploaded_by_role: 'customer',
+        uploaded_by_email: 'sara@example.com',
+        notes: 'Captured prior to takedown filing.',
+        created_at: '2026-11-10T11:30:00.000Z',
+      },
+      {
+        id: 'ev-rep-2',
+        title: 'Copyright registration reference',
+        category: 'ownership_proof',
+        sha256_preview: '11223344aabbccdd',
+        has_encrypted_file: false,
+        uploaded_by_role: 'staff',
+        uploaded_by_email: 'ops@fremove.com',
+        created_at: '2026-11-10T12:00:00.000Z',
+      },
+    ],
+  };
+
+  const singleReport = buildCaseEvidencePrintReport(
+    [caseWithEvidence],
+    { name: 'Sara Kareem', email: 'sara@example.com' },
+    nowMs
+  );
+  assert.equal(singleReport.isMultiCase, false);
+  assert.equal(singleReport.totalCases, 1);
+  assert.equal(singleReport.totalEvidenceItems, 2);
+  assert.equal(singleReport.encryptedEvidenceCount, 1);
+  assert.equal(singleReport.generatedAt, '2026-11-27T08:30:00.000Z');
+  assert.equal(singleReport.sections[0].evidenceItems[0].fileName, 'ig-impostor.png');
+  assert.equal(singleReport.sections[0].evidenceItems[0].encryptedVault, true);
+  assert.equal(singleReport.sections[0].evidenceItems[1].encryptedVault, false);
+
+  const dossier = buildCaseEvidencePrintReport(
+    [caseWithEvidence, sampleCases[2]],
+    { name: 'Sara Kareem', email: 'sara@example.com' },
+    nowMs
+  );
+  assert.equal(dossier.isMultiCase, true);
+  assert.equal(dossier.totalCases, 2);
+  assert.equal(dossier.totalEvidenceItems, 2);
 });
 
 
